@@ -1,5 +1,6 @@
 
-import { StudentProfile, SchoolData } from '../types';
+import { StudentProfile, SchoolData, ConfigData } from '../types';
+import { DEFAULT_RANKS, DEFAULT_RESULTS, DEFAULT_PROSPECTS } from '../constants';
 
 declare const google: any;
 
@@ -60,6 +61,8 @@ export class SheetService {
   }
 
   public async fetchAllData(spreadsheetId: string, accessToken: string) {
+    // Batch fetching would be better, but individual requests are simpler to debug for now
+    
     // Fetch Students
     const studentsResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Students!A2:V?valueRenderOption=FORMATTED_VALUE`, {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -78,17 +81,40 @@ export class SheetService {
     });
     const clubsData = await clubsResp.json();
 
-    // Fetch Recruiters (New)
+    // Fetch Recruiters
     const recruitersResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Recruiters!A2:A?valueRenderOption=FORMATTED_VALUE`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     });
     const recruitersData = await recruitersResp.json();
 
+    // Fetch Config (Ranks, Results, Prospects)
+    let configData: ConfigData = { ranks: DEFAULT_RANKS, results: DEFAULT_RESULTS, prospects: DEFAULT_PROSPECTS };
+    try {
+        const configResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Config!A2:C?valueRenderOption=FORMATTED_VALUE`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const configResult = await configResp.json();
+        if (configResult.values) {
+            configData = {
+                ranks: configResult.values.map((r: any[]) => r[0]).filter((v: any) => v),
+                results: configResult.values.map((r: any[]) => r[1]).filter((v: any) => v),
+                prospects: configResult.values.map((r: any[]) => r[2]).filter((v: any) => v),
+            };
+            // Fallback if empty
+            if (configData.ranks.length === 0) configData.ranks = DEFAULT_RANKS;
+            if (configData.results.length === 0) configData.results = DEFAULT_RESULTS;
+            if (configData.prospects.length === 0) configData.prospects = DEFAULT_PROSPECTS;
+        }
+    } catch (e) {
+        console.warn("Config sheet not found, using defaults", e);
+    }
+
     return {
         students: this.mapRowsToStudents(studentsData.values || []),
         schools: this.mapRowsToSchools(schoolsData.values || []),
         clubs: (clubsData.values || []).map((row: any[]) => row[0]).filter((c: any) => c),
-        recruiters: (recruitersData.values || []).map((row: any[]) => row[0]).filter((r: any) => r)
+        recruiters: (recruitersData.values || []).map((row: any[]) => row[0]).filter((r: any) => r),
+        config: configData
     };
   }
 
@@ -162,7 +188,7 @@ export class SheetService {
     });
   }
   
-  public async syncMasterData(spreadsheetId: string, accessToken: string, schools: SchoolData[], clubs: string[], recruiters: string[]) {
+  public async syncMasterData(spreadsheetId: string, accessToken: string, schools: SchoolData[], clubs: string[], recruiters: string[], config: ConfigData) {
      // Sync Schools
      const schoolRows = schools.map(this.mapSchoolToRow);
      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Schools!A2:F?valueInputOption=USER_ENTERED`, {
@@ -186,6 +212,23 @@ export class SheetService {
         headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ values: recruiterRows })
     });
+
+    // Sync Config
+    const maxLength = Math.max(config.ranks.length, config.results.length, config.prospects.length);
+    const configRows = [];
+    for (let i = 0; i < maxLength; i++) {
+        configRows.push([
+            config.ranks[i] || '',
+            config.results[i] || '',
+            config.prospects[i] || ''
+        ]);
+    }
+    // Clear existing first (optional but safer if list shrinks) - simplify by just overwriting for now
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Config!A2:C?valueInputOption=USER_ENTERED`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: configRows })
+    });
   }
 
   // --- Mappers ---
@@ -205,7 +248,7 @@ export class SheetService {
         studentFurigana: row[10] || '',
         gender: row[11] || '',
         clubAchievements: row[12] || '',
-        scoreInfo: row[13]?.toString() || '', // Renamed for obfuscation
+        scoreInfo: row[13]?.toString() || '',
         scholarshipRank: row[14] || '',
         recruiterType: row[15] || '',
         callDatePrincipal: row[16] || '',

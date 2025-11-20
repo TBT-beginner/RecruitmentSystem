@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { StudentProfile, ProspectLevel, RecruitmentResult } from '../types';
+import { StudentProfile, ConfigData } from '../types';
 import { Edit, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Filter, X, Save } from 'lucide-react';
 
 interface StudentListProps {
@@ -8,6 +8,7 @@ interface StudentListProps {
   onEdit: (student: StudentProfile) => void;
   onDelete: (id: string) => void;
   onUpdate?: (student: StudentProfile) => void;
+  config: ConfigData;
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -32,33 +33,7 @@ const ACTION_PRIORITIES: Record<string, number> = {
   "見送り": 7
 };
 
-const getNextAction = (student: StudentProfile) => {
-    if (student.result !== RecruitmentResult.PENDING && student.result !== RecruitmentResult.HOLD) {
-      return { text: "完了", color: "text-slate-400 bg-slate-100" };
-    }
-    if (student.prospect === ProspectLevel.LOW) {
-       return { text: "見送り", color: "text-slate-400 bg-slate-100" };
-    }
-    if (student.prospect === ProspectLevel.HIGH) {
-      return { text: "結果待", color: "text-blue-600 bg-blue-50 border-blue-200" };
-    }
-    
-    if (student.visitDate && student.visitDate !== '×') {
-      return { text: "結果記入", color: "text-orange-600 bg-orange-50 border-orange-200 animate-pulse" };
-    }
-
-    if (student.callDateAdvisor) {
-       return { text: "訪問日設定", color: "text-purple-600 bg-purple-50 border-purple-200" };
-    }
-
-    if (student.callDatePrincipal) {
-       return { text: "顧問TEL", color: "text-indigo-600 bg-indigo-50 border-indigo-200" };
-    }
-
-    return { text: "管理職TEL", color: "text-red-600 bg-red-50 border-red-200 font-bold" };
-};
-
-const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, onUpdate }) => {
+const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, onUpdate, config }) => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
   
@@ -79,6 +54,40 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
   const schoolOptions = useMemo(() => Array.from(new Set(students.map(s => s.schoolName))).sort(), [students]);
   const clubOptions = useMemo(() => Array.from(new Set(students.map(s => s.clubName))).sort(), [students]);
   const actionOptions = Object.keys(ACTION_PRIORITIES);
+
+  const getNextAction = (student: StudentProfile) => {
+    // 注意: このロジックはスプレッドシート内の特定の文字列（未定, 保留, ○, ×, 確約/合格など）に依存しています。
+    // 文字列が変更されると正しく機能しない可能性があります。
+    
+    // 完了: 未定でも保留でもない (つまり確約、合格、辞退など)
+    if (student.result !== '未定' && student.result !== '保留') {
+      return { text: "完了", color: "text-slate-400 bg-slate-100" };
+    }
+    
+    // 見送り: 見込みが×
+    if (student.prospect === '×') {
+       return { text: "見送り", color: "text-slate-400 bg-slate-100" };
+    }
+    
+    // 結果待: 見込みが○
+    if (student.prospect === '○') {
+      return { text: "結果待", color: "text-blue-600 bg-blue-50 border-blue-200" };
+    }
+    
+    if (student.visitDate && student.visitDate !== '×') {
+      return { text: "結果記入", color: "text-orange-600 bg-orange-50 border-orange-200 animate-pulse" };
+    }
+
+    if (student.callDateAdvisor) {
+       return { text: "訪問日設定", color: "text-purple-600 bg-purple-50 border-purple-200" };
+    }
+
+    if (student.callDatePrincipal) {
+       return { text: "顧問TEL", color: "text-indigo-600 bg-indigo-50 border-indigo-200" };
+    }
+
+    return { text: "管理職TEL", color: "text-red-600 bg-red-50 border-red-200 font-bold" };
+  };
 
   // Filter and Sort Logic
   const processedStudents = useMemo(() => {
@@ -133,21 +142,17 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
       : <ArrowDown size={16} className="text-blue-600" />;
   };
 
-  const getProspectColor = (prospect: ProspectLevel) => {
-    switch (prospect) {
-      case ProspectLevel.HIGH: return 'bg-green-100 text-green-800 border-green-200 font-bold';
-      case ProspectLevel.LOW: return 'bg-slate-100 text-slate-400 border-slate-200';
-      case ProspectLevel.UNKNOWN: return 'bg-yellow-50 text-yellow-700 border-yellow-100';
-      default: return 'bg-slate-100 text-slate-800 border-slate-200';
-    }
+  const getProspectColor = (prospect: string) => {
+    if (prospect === '○') return 'bg-green-100 text-green-800 border-green-200 font-bold';
+    if (prospect === '×') return 'bg-slate-100 text-slate-400 border-slate-200';
+    if (prospect === '未定') return 'bg-yellow-50 text-yellow-700 border-yellow-100';
+    return 'bg-slate-100 text-slate-800 border-slate-200';
   };
 
-  const getResultColor = (result: RecruitmentResult) => {
-    switch (result) {
-      case RecruitmentResult.ACCEPTED: return 'bg-orange-100 text-orange-800 border-orange-200 font-bold';
-      case RecruitmentResult.DECLINED: return 'bg-gray-200 text-gray-500 border-gray-300 line-through';
-      default: return 'text-slate-600';
-    }
+  const getResultColor = (result: string) => {
+    if (result === '確約/合格') return 'bg-orange-100 text-orange-800 border-orange-200 font-bold';
+    if (result && result.includes('辞退')) return 'bg-gray-200 text-gray-500 border-gray-300 line-through';
+    return 'text-slate-600';
   };
 
   const handleOpenDetail = (student: StudentProfile) => {
@@ -184,7 +189,8 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
     let updatedStudent = { ...student, [field]: val };
     // If visit date is set to '×', result becomes declined
     if (field === 'visitDate' && val === '×') {
-        updatedStudent.result = RecruitmentResult.DECLINED;
+        const declined = config.results.find(r => r.includes('辞退')) || '辞退';
+        updatedStudent.result = declined;
     }
 
     if (onUpdate) {
@@ -444,7 +450,7 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
                       onBlur={() => setEditingCell(null)}
                       className="absolute inset-0 w-full h-full border-2 border-blue-500 rounded px-1 text-sm"
                     >
-                      {Object.values(ProspectLevel).map(p => <option key={p} value={p}>{p}</option>)}
+                      {config.prospects.map(p => <option key={p} value={p}>{p}</option>)}
                     </select>
                   ) : (
                     <span className={`px-3 py-1 rounded-full text-sm border ${getProspectColor(student.prospect)}`}>
@@ -467,7 +473,7 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
                       onBlur={() => setEditingCell(null)}
                       className="absolute inset-0 w-full h-full border-2 border-blue-500 rounded px-1 text-sm"
                     >
-                      {Object.values(RecruitmentResult).map(r => <option key={r} value={r}>{r}</option>)}
+                      {config.results.map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
                   ) : (
                     <span className={`px-2 py-1 rounded-md text-xs ${getResultColor(student.result)}`}>
@@ -578,7 +584,7 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
                        </div>
                        <div className="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100">
                           <div className="text-xs md:text-sm text-slate-500 mb-1">見込み</div>
-                          <div className={`font-bold text-base md:text-lg ${selectedStudent.prospect === ProspectLevel.HIGH ? 'text-green-600' : ''}`}>{selectedStudent.prospect}</div>
+                          <div className={`font-bold text-base md:text-lg ${selectedStudent.prospect === '○' ? 'text-green-600' : ''}`}>{selectedStudent.prospect}</div>
                        </div>
                        <div className="bg-slate-50 p-3 md:p-4 rounded-lg border border-slate-100">
                           <div className="text-xs md:text-sm text-slate-500 mb-1">管理職TEL</div>

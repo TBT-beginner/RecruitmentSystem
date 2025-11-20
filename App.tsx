@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { StudentProfile, TabType, SchoolData, GoogleUser } from './types';
+import { StudentProfile, TabType, SchoolData, GoogleUser, ConfigData } from './types';
 import StudentForm from './components/StudentForm';
 import StudentList from './components/StudentList';
 import Dashboard from './components/Dashboard';
@@ -8,6 +8,7 @@ import MasterData from './components/MasterData';
 import Login from './components/Login';
 import { sheetService } from './services/sheetService';
 import { LayoutDashboard, List, UserPlus, GraduationCap, Settings, Menu, ChevronLeft, LogOut, Loader2 } from 'lucide-react';
+import { DEFAULT_RANKS, DEFAULT_RESULTS, DEFAULT_PROSPECTS } from './constants';
 
 // Spreadsheet ID
 const SPREADSHEET_ID = '1Xfq3GPnLGzFM2z4vG3eDStlUKSHpWQJqMneeDRgrzDY';
@@ -25,6 +26,11 @@ const App: React.FC = () => {
   const [schools, setSchools] = useState<SchoolData[]>([]);
   const [clubs, setClubs] = useState<string[]>([]);
   const [recruiters, setRecruiters] = useState<string[]>([]);
+  const [config, setConfig] = useState<ConfigData>({
+      ranks: DEFAULT_RANKS,
+      results: DEFAULT_RESULTS,
+      prospects: DEFAULT_PROSPECTS
+  });
   
   const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -68,11 +74,12 @@ const App: React.FC = () => {
             setSchools(data.schools);
             setClubs(data.clubs);
             setRecruiters(data.recruiters);
+            setConfig(data.config);
         } catch (e: any) {
             console.error(e);
             let errorMsg = "データの取得に失敗しました。";
             if (e.message && e.message.includes('400')) {
-                errorMsg += "スプレッドシートに「Students」「Schools」「Clubs」「Recruiters」シートが存在するか確認してください。";
+                errorMsg += "スプレッドシートに必要なシート（Config等）が存在するか確認してください。";
             } else if (e.message && e.message.includes('403')) {
                 errorMsg += "スプレッドシートへのアクセス権限がありません。";
             }
@@ -174,24 +181,19 @@ const App: React.FC = () => {
   };
 
   // Master Data Sync Wrapper
-  const handleSchoolsUpdate = async (newSchools: SchoolData[]) => {
+  const handleMasterDataUpdate = async (
+      newSchools: SchoolData[], 
+      newClubs: string[], 
+      newRecruiters: string[],
+      newConfig: ConfigData
+  ) => {
       setSchools(newSchools);
-      if (accessToken) {
-          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, newSchools, clubs, recruiters);
-      }
-  };
-
-  const handleClubsUpdate = async (newClubs: string[]) => {
       setClubs(newClubs);
-       if (accessToken) {
-          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, schools, newClubs, recruiters);
-      }
-  };
-
-  const handleRecruitersUpdate = async (newRecruiters: string[]) => {
       setRecruiters(newRecruiters);
+      setConfig(newConfig);
+
       if (accessToken) {
-          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, schools, clubs, newRecruiters);
+          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, newSchools, newClubs, newRecruiters, newConfig);
       }
   };
 
@@ -199,7 +201,7 @@ const App: React.FC = () => {
     const updatedSchools = [...schools, newSchool];
     setSchools(updatedSchools);
      if (accessToken) {
-        await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, updatedSchools, clubs, recruiters);
+        await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, updatedSchools, clubs, recruiters, config);
     }
   };
 
@@ -357,6 +359,9 @@ const App: React.FC = () => {
               recruitmentTarget={recruitmentTarget}
               setRecruitmentTarget={setRecruitmentTarget}
               clubs={clubs}
+              ranks={config.ranks}
+              prospects={config.prospects}
+              results={config.results}
             />
           )}
           
@@ -368,6 +373,7 @@ const App: React.FC = () => {
                   onEdit={startEdit} 
                   onDelete={handleDeleteStudent} 
                   onUpdate={handleUpdateStudent}
+                  config={config}
                 />
                </div>
             </div>
@@ -376,11 +382,10 @@ const App: React.FC = () => {
           {activeTab === 'master' && (
             <MasterData 
               schools={schools} 
-              setSchools={handleSchoolsUpdate}
               clubs={clubs}
-              setClubs={handleClubsUpdate}
               recruiters={recruiters}
-              setRecruiters={handleRecruitersUpdate}
+              config={config}
+              onUpdateAll={handleMasterDataUpdate}
             />
           )}
 
@@ -395,6 +400,9 @@ const App: React.FC = () => {
                 schools={schools}
                 clubs={clubs}
                 recruiters={recruiters}
+                ranks={config.ranks}
+                prospects={config.prospects}
+                results={config.results}
                 onAddSchool={handleDirectAddSchool}
               />
             </div>

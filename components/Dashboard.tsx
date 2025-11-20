@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { StudentProfile, ProspectLevel, RecruitmentResult, ScholarshipRank } from '../types';
+import { StudentProfile } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Filter, X, Settings, Check, Edit2 } from 'lucide-react';
 
@@ -9,11 +9,16 @@ interface DashboardProps {
   recruitmentTarget: number;
   setRecruitmentTarget: (target: number) => void;
   clubs: string[];
+  ranks: string[];
+  prospects: string[];
+  results: string[];
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-const Dashboard: React.FC<DashboardProps> = ({ students, recruitmentTarget, setRecruitmentTarget, clubs }) => {
+const Dashboard: React.FC<DashboardProps> = ({ 
+    students, recruitmentTarget, setRecruitmentTarget, clubs, ranks, prospects, results 
+}) => {
   // Target Editing State
   const [isEditingTarget, setIsEditingTarget] = useState(false);
   const [tempTarget, setTempTarget] = useState(recruitmentTarget.toString());
@@ -36,7 +41,7 @@ const Dashboard: React.FC<DashboardProps> = ({ students, recruitmentTarget, setR
   }, [students, schoolFilter, clubFilter]);
 
   // 1. Data for Prospect Distribution
-  const prospectData = Object.values(ProspectLevel).map(level => ({
+  const prospectData = prospects.map(level => ({
     name: level,
     count: filteredStudents.filter(s => s.prospect === level).length
   }));
@@ -54,7 +59,7 @@ const Dashboard: React.FC<DashboardProps> = ({ students, recruitmentTarget, setR
   }));
 
   // 3. Data for Rank Distribution
-  const rankData = Object.values(ScholarshipRank).map(rank => ({
+  const rankData = ranks.map(rank => ({
     name: rank,
     count: filteredStudents.filter(s => s.scholarshipRank === rank).length
   }));
@@ -63,7 +68,8 @@ const Dashboard: React.FC<DashboardProps> = ({ students, recruitmentTarget, setR
   const total = filteredStudents.length;
   const contacted = filteredStudents.filter(s => s.callDatePrincipal || s.callDateAdvisor).length;
   const visited = filteredStudents.filter(s => s.visitDate && s.visitDate !== '×').length;
-  const accepted = filteredStudents.filter(s => s.result === RecruitmentResult.ACCEPTED).length;
+  // Assume "確約/合格" is always the accepted status for now, or rely on what's in results
+  const accepted = filteredStudents.filter(s => s.result === '確約/合格').length;
 
   const funnelData = [
     { name: 'リスト登録', value: total },
@@ -142,7 +148,7 @@ const Dashboard: React.FC<DashboardProps> = ({ students, recruitmentTarget, setR
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-w-0">
           <p className="text-base text-slate-500 mb-1">有力(○)</p>
-          <p className="text-4xl font-bold text-green-600">{filteredStudents.filter(s => s.prospect === ProspectLevel.HIGH).length}<span className="text-lg font-normal text-slate-400 ml-2">名</span></p>
+          <p className="text-4xl font-bold text-green-600">{filteredStudents.filter(s => s.prospect === '○').length}<span className="text-lg font-normal text-slate-400 ml-2">名</span></p>
         </div>
         
         {/* Accepted Card with Goal Setting */}

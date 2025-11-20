@@ -1,15 +1,14 @@
 
 import React, { useState, useMemo } from 'react';
-import { SchoolData } from '../types';
-import { Save, Trash2, Plus, MapPin, Search, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Dumbbell, Users } from 'lucide-react';
+import { SchoolData, ConfigData } from '../types';
+import { Save, Trash2, Plus, MapPin, Search, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Dumbbell, Users, Sliders } from 'lucide-react';
 
 interface MasterDataProps {
   schools: SchoolData[];
-  setSchools: (schools: SchoolData[]) => void;
   clubs: string[];
-  setClubs: (clubs: string[]) => void;
   recruiters: string[];
-  setRecruiters: (recruiters: string[]) => void;
+  config: ConfigData;
+  onUpdateAll: (schools: SchoolData[], clubs: string[], recruiters: string[], config: ConfigData) => void;
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -19,7 +18,7 @@ interface SortConfig {
   direction: SortDirection;
 }
 
-type MasterTab = 'school' | 'club' | 'recruiter';
+type MasterTab = 'school' | 'club' | 'recruiter' | 'config';
 
 // Helper function to generate next school code
 const getNextSchoolCode = (currentSchools: SchoolData[]): string => {
@@ -30,7 +29,7 @@ const getNextSchoolCode = (currentSchools: SchoolData[]): string => {
   return (maxId + 1).toString();
 };
 
-const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, setClubs, recruiters, setRecruiters }) => {
+const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, config, onUpdateAll }) => {
   const [activeTab, setActiveTab] = useState<MasterTab>('school');
   const [searchQuery, setSearchQuery] = useState('');
   const [municipalityFilter, setMunicipalityFilter] = useState('');
@@ -43,6 +42,11 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
 
   // Recruiter Entry State
   const [newRecruiter, setNewRecruiter] = useState('');
+  
+  // Config Entry States
+  const [newRank, setNewRank] = useState('');
+  const [newResult, setNewResult] = useState('');
+  const [newProspect, setNewProspect] = useState('');
 
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   
@@ -81,14 +85,14 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
       headTeacher: ''
     };
 
-    setSchools([...schools, schoolToAdd]);
+    onUpdateAll([...schools, schoolToAdd], clubs, recruiters, config);
     setNewSchool({ municipality: newSchool.municipality, name: '' });
     alert(`学校を追加しました (コード: ${schoolToAdd.code})`);
   };
 
   const handleDeleteSchool = (code: string) => {
     if (window.confirm('この学校情報を削除してもよろしいですか？（この学校に紐づく生徒データがある場合、表示に影響が出る可能性があります）')) {
-      setSchools(schools.filter(s => s.code !== code));
+      onUpdateAll(schools.filter(s => s.code !== code), clubs, recruiters, config);
     }
   };
 
@@ -109,9 +113,10 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
 
   const saveEditSchool = () => {
     if (editingId && editingField) {
-      setSchools(schools.map(s => 
+      const updatedSchools = schools.map(s => 
         s.code === editingId ? { ...s, [editingField]: editValue } : s
-      ));
+      );
+      onUpdateAll(updatedSchools, clubs, recruiters, config);
       setEditingId(null);
       setEditingField(null);
     }
@@ -130,13 +135,13 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
         alert('この部活動は既に登録されています。');
         return;
     }
-    setClubs([...clubs, newClub.trim()]);
+    onUpdateAll(schools, [...clubs, newClub.trim()], recruiters, config);
     setNewClub('');
   };
 
   const handleDeleteClub = (clubName: string) => {
     if (window.confirm(`「${clubName}」を削除しますか？`)) {
-      setClubs(clubs.filter(c => c !== clubName));
+      onUpdateAll(schools, clubs.filter(c => c !== clubName), recruiters, config);
     }
   };
 
@@ -149,7 +154,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
     if (editingClubIndex !== null) {
         const updated = [...clubs];
         updated[editingClubIndex] = editClubValue;
-        setClubs(updated);
+        onUpdateAll(schools, updated, recruiters, config);
         setEditingClubIndex(null);
     }
   };
@@ -166,13 +171,13 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
         alert('この担当者は既に登録されています。');
         return;
     }
-    setRecruiters([...recruiters, newRecruiter.trim()]);
+    onUpdateAll(schools, clubs, [...recruiters, newRecruiter.trim()], config);
     setNewRecruiter('');
   };
 
   const handleDeleteRecruiter = (recruiterName: string) => {
     if (window.confirm(`「${recruiterName}」を削除しますか？`)) {
-        setRecruiters(recruiters.filter(r => r !== recruiterName));
+        onUpdateAll(schools, clubs, recruiters.filter(r => r !== recruiterName), config);
     }
   };
 
@@ -185,13 +190,30 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
     if (editingRecruiterIndex !== null) {
         const updated = [...recruiters];
         updated[editingRecruiterIndex] = editRecruiterValue;
-        setRecruiters(updated);
+        onUpdateAll(schools, clubs, updated, config);
         setEditingRecruiterIndex(null);
     }
   };
 
   const cancelEditRecruiter = () => {
     setEditingRecruiterIndex(null);
+  };
+
+  // --- Config Handlers ---
+  const handleConfigUpdate = (type: keyof ConfigData, action: 'add' | 'delete', value: string) => {
+      const currentList = config[type];
+      let newList = [...currentList];
+      if (action === 'add') {
+          if (!value.trim() || currentList.includes(value.trim())) return;
+          newList.push(value.trim());
+      } else {
+          if (window.confirm(`「${value}」を削除しますか？使用中のデータがある場合、表示がおかしくなる可能性があります。`)) {
+            newList = newList.filter(v => v !== value);
+          } else {
+              return;
+          }
+      }
+      onUpdateAll(schools, clubs, recruiters, { ...config, [type]: newList });
   };
 
 
@@ -273,6 +295,20 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
                     担当者マスタ
                 </div>
                  {activeTab === 'recruiter' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600"></div>}
+            </button>
+             <button 
+                onClick={() => setActiveTab('config')}
+                className={`pb-4 px-4 text-lg font-medium transition-colors relative whitespace-nowrap ${
+                    activeTab === 'config' 
+                    ? 'text-blue-600' 
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+            >
+                <div className="flex items-center gap-2">
+                    <Sliders size={24} />
+                    設定マスタ
+                </div>
+                 {activeTab === 'config' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600"></div>}
             </button>
         </div>
 
@@ -633,6 +669,81 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
              </div>
         </>
       )}
+      
+      {activeTab === 'config' && (
+         <div className="flex-1 overflow-y-auto">
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-6 text-sm">
+                <strong>注意:</strong> ここでの設定はアプリケーション全体の自動判定ロジック（「完了」「見送り」判定など）に影響します。
+                特に「未定」「確約/合格」「辞退」「保留」「○」「×」といった基本キーワードを変更・削除すると、自動ステータス更新が正しく動作しなくなる場合があります。
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Ranks */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                    <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 flex justify-between items-center">
+                        <span>奨学生ランク</span>
+                    </div>
+                     <div className="p-4 border-b border-slate-100 bg-white">
+                        <form onSubmit={(e) => { e.preventDefault(); handleConfigUpdate('ranks', 'add', newRank); setNewRank(''); }} className="flex gap-2">
+                            <input type="text" value={newRank} onChange={e => setNewRank(e.target.value)} placeholder="追加..." className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm" />
+                            <button type="submit" disabled={!newRank} className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 disabled:opacity-50"><Plus size={18}/></button>
+                        </form>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2 max-h-96">
+                        {config.ranks.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center p-3 hover:bg-slate-50 border-b border-slate-100 last:border-0">
+                                <span>{item}</span>
+                                <button onClick={() => handleConfigUpdate('ranks', 'delete', item)} className="text-slate-300 hover:text-red-500"><X size={16}/></button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Results */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                    <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 flex justify-between items-center">
+                        <span>勧誘結果</span>
+                    </div>
+                     <div className="p-4 border-b border-slate-100 bg-white">
+                        <form onSubmit={(e) => { e.preventDefault(); handleConfigUpdate('results', 'add', newResult); setNewResult(''); }} className="flex gap-2">
+                            <input type="text" value={newResult} onChange={e => setNewResult(e.target.value)} placeholder="追加..." className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm" />
+                            <button type="submit" disabled={!newResult} className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 disabled:opacity-50"><Plus size={18}/></button>
+                        </form>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2 max-h-96">
+                        {config.results.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center p-3 hover:bg-slate-50 border-b border-slate-100 last:border-0">
+                                <span>{item}</span>
+                                <button onClick={() => handleConfigUpdate('results', 'delete', item)} className="text-slate-300 hover:text-red-500"><X size={16}/></button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Prospects */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                    <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 flex justify-between items-center">
+                        <span>見込み度</span>
+                    </div>
+                     <div className="p-4 border-b border-slate-100 bg-white">
+                        <form onSubmit={(e) => { e.preventDefault(); handleConfigUpdate('prospects', 'add', newProspect); setNewProspect(''); }} className="flex gap-2">
+                            <input type="text" value={newProspect} onChange={e => setNewProspect(e.target.value)} placeholder="追加..." className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm" />
+                            <button type="submit" disabled={!newProspect} className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 disabled:opacity-50"><Plus size={18}/></button>
+                        </form>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2 max-h-96">
+                        {config.prospects.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center p-3 hover:bg-slate-50 border-b border-slate-100 last:border-0">
+                                <span>{item}</span>
+                                <button onClick={() => handleConfigUpdate('prospects', 'delete', item)} className="text-slate-300 hover:text-red-500"><X size={16}/></button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+         </div>
+      )}
+
       </div>
     </div>
   );

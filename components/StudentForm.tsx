@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { StudentProfile, Gender, ScholarshipRank, ProspectLevel, RecruitmentResult, SchoolData, RecruiterType } from '../types';
-import { Save, X, Plus, School, Trash2, Calendar, XCircle, ChevronLeft } from 'lucide-react';
+import { StudentProfile, GenderValues, SchoolData } from '../types';
+import { Save, X, Plus, School, Trash2, XCircle, ChevronLeft } from 'lucide-react';
 
 interface StudentFormProps {
   initialData?: StudentProfile | null;
@@ -12,10 +12,17 @@ interface StudentFormProps {
   schools: SchoolData[];
   clubs: string[];
   recruiters: string[];
+  ranks: string[];
+  prospects: string[];
+  results: string[];
   onAddSchool: (school: SchoolData) => void;
 }
 
-const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDelete, onCancel, nextId, schools, clubs, recruiters, onAddSchool }) => {
+const StudentForm: React.FC<StudentFormProps> = ({ 
+    initialData, onSubmit, onDelete, onCancel, nextId, 
+    schools, clubs, recruiters, ranks, prospects, results,
+    onAddSchool 
+}) => {
   // Extract unique municipalities from schools list
   const municipalities = useMemo(() => Array.from(new Set(schools.map(s => s.municipality))).sort(), [schools]);
 
@@ -31,16 +38,16 @@ const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDele
     clubName: '',
     studentName: '',
     studentFurigana: '',
-    gender: '' as Gender,
+    gender: '' as any,
     clubAchievements: '',
-    scoreInfo: '', // Renamed from academicScore
-    scholarshipRank: '' as ScholarshipRank,
+    scoreInfo: '',
+    scholarshipRank: '' as any,
     recruiterType: recruiters[0] || '',
     callDatePrincipal: '',
     callDateAdvisor: '',
     visitDate: '',
-    prospect: ProspectLevel.UNKNOWN,
-    result: RecruitmentResult.PENDING,
+    prospect: prospects[2] || '未定', // Default to 3rd item (Unknown) or text
+    result: results[0] || '未定', // Default to 1st item (Pending)
     notes: ''
   });
 
@@ -63,17 +70,20 @@ const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDele
   // Filter schools based on municipality
   const availableSchools = schools.filter(s => s.municipality === formData.municipality);
 
-  // Check if the current selected school exists in the database (for styling auto-filled fields)
+  // Check if the current selected school exists in the database
   const isSchoolSelected = schools.some(s => s.name === formData.schoolName && s.municipality === formData.municipality);
 
   // Handle school selection change to auto-fill details
   const handleSchoolChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedName = e.target.value;
+    // Find school data - look in all schools to be safe, though availableSchools should suffice
     const schoolInfo = schools.find(s => s.name === selectedName && s.municipality === formData.municipality);
 
     setFormData(prev => ({
       ...prev,
       schoolName: selectedName,
+      // Apply autofill data if school exists, otherwise clear or keep existing depending on requirement. 
+      // Here we clear if not found to avoid stale data, or populate if found.
       schoolCode: schoolInfo ? schoolInfo.code : '',
       principalName: schoolInfo ? schoolInfo.principal || '' : '',
       schoolPhone: schoolInfo ? schoolInfo.phone || '' : '',
@@ -90,9 +100,11 @@ const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDele
   const handleVisitDateChange = (value: string) => {
     setFormData(prev => {
         const updates: any = { visitDate: value };
-        // If visit is impossible (x), set result to DECLINED
+        // If visit is impossible (x), set result to DECLINED (assuming '辞退' or similar exists in results)
         if (value === '×') {
-            updates.result = RecruitmentResult.DECLINED;
+            // Try to find "辞退" or similar in results list
+            const declinedStatus = results.find(r => r.includes('辞退')) || results[results.length - 1];
+            if (declinedStatus) updates.result = declinedStatus;
         }
         return { ...prev, ...updates };
     });
@@ -187,7 +199,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDele
                 className="w-full border-slate-300 rounded-lg shadow-sm p-3 text-lg border focus:ring-blue-500 focus:border-blue-500 bg-white"
               >
                 <option value="">選択してください</option>
-                {Object.values(Gender).map(g => <option key={g} value={g}>{g}</option>)}
+                {Object.values(GenderValues).map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
             
@@ -214,7 +226,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDele
                 className="w-full border-slate-300 rounded-lg shadow-sm p-3 text-lg border focus:ring-blue-500 focus:border-blue-500 font-medium text-slate-700 bg-white"
               >
                 <option value="">選択してください</option>
-                {Object.values(ScholarshipRank).map(r => <option key={r} value={r}>{r}</option>)}
+                {ranks.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
             <div></div>
@@ -415,13 +427,13 @@ const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDele
              <div className="">
               <label className="block text-lg font-medium text-slate-700 mb-2">見込み</label>
               <select name="prospect" value={formData.prospect} onChange={handleChange} className="w-full border-slate-300 rounded-lg shadow-sm p-3 text-lg border font-bold text-blue-600 bg-white focus:ring-orange-500">
-                {Object.values(ProspectLevel).map(p => <option key={p} value={p}>{p}</option>)}
+                {prospects.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             <div className="">
               <label className="block text-lg font-medium text-slate-700 mb-2">結果</label>
               <select name="result" value={formData.result} onChange={handleChange} className="w-full border-slate-300 rounded-lg shadow-sm p-3 text-lg border font-bold text-red-600 bg-white focus:ring-orange-500">
-                {Object.values(RecruitmentResult).map(r => <option key={r} value={r}>{r}</option>)}
+                {results.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
           </div>
