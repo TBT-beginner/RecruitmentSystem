@@ -488,7 +488,7 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
                   </div>
                 </td>
               </tr>
-            )}})}
+            )})}
             {processedStudents.length === 0 && (
               <tr>
                 <td colSpan={12} className="px-6 py-12 text-center text-slate-400 text-lg">
