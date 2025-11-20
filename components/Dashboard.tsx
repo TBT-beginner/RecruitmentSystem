@@ -1,14 +1,16 @@
-
 import React, { useState, useMemo } from 'react';
-import { StudentProfile } from '../types';
+import { StudentProfile, SchoolData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Filter, X, Settings, Check, Edit2 } from 'lucide-react';
+import { Filter, X, Edit2, Check } from 'lucide-react';
+import FilterModal, { FilterState } from './FilterModal';
 
 interface DashboardProps {
   students: StudentProfile[];
   recruitmentTarget: number;
   setRecruitmentTarget: (target: number) => void;
+  schools: SchoolData[];
   clubs: string[];
+  recruiters: string[];
   ranks: string[];
   prospects: string[];
   results: string[];
@@ -17,28 +19,39 @@ interface DashboardProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const Dashboard: React.FC<DashboardProps> = ({ 
-    students, recruitmentTarget, setRecruitmentTarget, clubs, ranks, prospects, results 
+    students, recruitmentTarget, setRecruitmentTarget, schools, clubs, recruiters, ranks, prospects, results 
 }) => {
   // Target Editing State
   const [isEditingTarget, setIsEditingTarget] = useState(false);
   const [tempTarget, setTempTarget] = useState(recruitmentTarget.toString());
 
-  // Filter States
-  const [schoolFilter, setSchoolFilter] = useState("");
-  const [clubFilter, setClubFilter] = useState("");
+  // Filter Modal State
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>({
+    municipalities: [],
+    schoolNames: [],
+    clubNames: [],
+    recruiterTypes: [],
+    actions: []
+  });
 
-  // Extract unique options for filters
-  const schoolOptions = Array.from(new Set(students.map(s => s.schoolName))).sort();
-  const clubOptions = Array.from(new Set(students.map(s => s.clubName))).sort();
-
-  // Filtered Data
+  // Filtered Data Logic
   const filteredStudents = useMemo(() => {
     return students.filter(s => {
-      const matchesSchool = schoolFilter ? s.schoolName === schoolFilter : true;
-      const matchesClub = clubFilter ? s.clubName === clubFilter : true;
-      return matchesSchool && matchesClub;
+      // Municipality Filter
+      if (filters.municipalities.length > 0 && !filters.municipalities.includes(s.municipality)) return false;
+      // School Filter
+      if (filters.schoolNames.length > 0 && !filters.schoolNames.includes(s.schoolName)) return false;
+      // Club Filter
+      if (filters.clubNames.length > 0 && !filters.clubNames.includes(s.clubName)) return false;
+      // Recruiter Filter
+      if (filters.recruiterTypes.length > 0 && !filters.recruiterTypes.includes(s.recruiterType)) return false;
+      
+      return true;
     });
-  }, [students, schoolFilter, clubFilter]);
+  }, [students, filters]);
+
+  const activeFilterCount = filters.municipalities.length + filters.schoolNames.length + filters.clubNames.length + filters.recruiterTypes.length;
 
   // 1. Data for Prospect Distribution
   const prospectData = prospects.map(level => ({
@@ -46,17 +59,21 @@ const Dashboard: React.FC<DashboardProps> = ({
     count: filteredStudents.filter(s => s.prospect === level).length
   }));
 
-  // 2. Data for Club Distribution (Fixed Order based on Master Data)
-  const clubCounts: Record<string, number> = {};
-  filteredStudents.forEach(s => {
-    clubCounts[s.clubName] = (clubCounts[s.clubName] || 0) + 1;
-  });
-  
+  // 2. Data for Club Distribution (Detailed: Total, Contacted, Prospect Circle)
   // Use clubs prop for ordering
-  const clubData = clubs.map(clubName => ({
-    name: clubName,
-    count: clubCounts[clubName] || 0
-  }));
+  const clubDetailedData = clubs.map(clubName => {
+    const clubStudents = filteredStudents.filter(s => s.clubName === clubName);
+    const total = clubStudents.length;
+    const contacted = clubStudents.filter(s => s.callDatePrincipal || s.callDateAdvisor || (s.visitDate && s.visitDate !== '×')).length;
+    const prospectCircle = clubStudents.filter(s => s.prospect === '○').length;
+    
+    return {
+        name: clubName,
+        count: total,
+        contacted: contacted,
+        prospect: prospectCircle
+    };
+  });
 
   // 3. Data for Rank Distribution
   const rankData = ranks.map(rank => ({
@@ -95,49 +112,53 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="p-4 md:p-6 space-y-6 md:space-y-8 overflow-y-auto h-full pb-48">
+      
+      <FilterModal 
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        onApply={setFilters}
+        currentFilters={filters}
+        schools={schools}
+        clubs={clubs}
+        recruiters={recruiters}
+      />
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
         <h2 className="text-2xl md:text-3xl font-bold text-slate-800">勧誘状況ダッシュボード</h2>
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-start md:items-center">
-        <div className="flex items-center gap-2 text-slate-500 font-bold text-lg">
+      <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center">
+        <div className="flex items-center gap-2 text-slate-500 font-bold text-lg shrink-0">
           <Filter size={24} />
           <span>絞り込み:</span>
         </div>
         
-        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-          <div className="relative w-full md:w-auto">
-            <select 
-              value={schoolFilter}
-              onChange={(e) => setSchoolFilter(e.target.value)}
-              className="w-full border border-slate-300 rounded-xl py-3 pl-4 pr-10 text-lg focus:ring-2 focus:ring-blue-200 outline-none md:min-w-[200px]"
-            >
-              <option value="">すべての中学校</option>
-              {schoolOptions.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
+        <button 
+            onClick={() => setIsFilterModalOpen(true)}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl border text-lg font-medium transition-colors w-full md:w-auto ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}
+        >
+            <span>条件を選択...</span>
+            {activeFilterCount > 0 && (
+                <span className="bg-blue-600 text-white text-sm px-2 py-0.5 rounded-full ml-2">{activeFilterCount}</span>
+            )}
+        </button>
 
-          <div className="relative w-full md:w-auto">
-            <select 
-              value={clubFilter}
-              onChange={(e) => setClubFilter(e.target.value)}
-              className="w-full border border-slate-300 rounded-xl py-3 pl-4 pr-10 text-lg focus:ring-2 focus:ring-blue-200 outline-none md:min-w-[200px]"
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap gap-2 flex-1">
+             {filters.municipalities.map(m => <span key={m} className="bg-slate-100 px-3 py-1 rounded-full text-sm text-slate-600 flex items-center gap-1">{m} <X size={14} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, municipalities: prev.municipalities.filter(x => x !== m)}))} /></span>)}
+             {filters.schoolNames.map(s => <span key={s} className="bg-slate-100 px-3 py-1 rounded-full text-sm text-slate-600 flex items-center gap-1">{s} <X size={14} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, schoolNames: prev.schoolNames.filter(x => x !== s)}))} /></span>)}
+             {filters.clubNames.map(c => <span key={c} className="bg-slate-100 px-3 py-1 rounded-full text-sm text-slate-600 flex items-center gap-1">{c} <X size={14} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, clubNames: prev.clubNames.filter(x => x !== c)}))} /></span>)}
+             {filters.recruiterTypes.map(r => <span key={r} className="bg-slate-100 px-3 py-1 rounded-full text-sm text-slate-600 flex items-center gap-1">{r} <X size={14} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, recruiterTypes: prev.recruiterTypes.filter(x => x !== r)}))} /></span>)}
+             
+             <button 
+                onClick={() => setFilters({municipalities: [], schoolNames: [], clubNames: [], recruiterTypes: [], actions: []})}
+                className="text-slate-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
+                title="条件をクリア"
             >
-              <option value="">すべての部活</option>
-              {clubOptions.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+                <X size={20} />
+            </button>
           </div>
-        </div>
-
-        {(schoolFilter || clubFilter) && (
-          <button 
-            onClick={() => { setSchoolFilter(""); setClubFilter(""); }}
-            className="text-slate-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors self-end md:self-auto"
-            title="条件をクリア"
-          >
-            <X size={24} />
-          </button>
         )}
       </div>
 
@@ -258,15 +279,18 @@ const Dashboard: React.FC<DashboardProps> = ({
        {/* Charts Row 2 */}
        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mb-8">
         <div className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-slate-200 h-96 md:h-[30rem] flex flex-col min-w-0">
-           <h3 className="text-lg font-bold text-slate-700 mb-4 uppercase tracking-wide flex-shrink-0">部活動別人数 (一覧)</h3>
+           <h3 className="text-lg font-bold text-slate-700 mb-4 uppercase tracking-wide flex-shrink-0">部活動別状況詳細</h3>
            <div className="flex-1 min-h-0 w-full">
              <ResponsiveContainer width="99%" height="100%">
-               <BarChart data={clubData} margin={{ top: 5, right: 20, left: 10, bottom: 60 }}>
+               <BarChart data={clubDetailedData} margin={{ top: 5, right: 20, left: 10, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{fontSize: 12}} height={70} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                <Legend verticalAlign="top" height={36} />
+                <Bar dataKey="count" name="対象総数" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="contacted" name="声掛け済み" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="prospect" name="見込み○" fill="#ffc658" radius={[4, 4, 0, 0]} />
                </BarChart>
              </ResponsiveContainer>
            </div>

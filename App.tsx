@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { StudentProfile, TabType, SchoolData, GoogleUser, ConfigData } from './types';
 import StudentForm from './components/StudentForm';
@@ -388,7 +387,9 @@ const App: React.FC = () => {
               students={students} 
               recruitmentTarget={config.recruitmentTarget}
               setRecruitmentTarget={handleTargetUpdate}
+              schools={schools}
               clubs={clubs}
+              recruiters={recruiters}
               ranks={config.ranks}
               prospects={config.prospects}
               results={config.results}
@@ -404,6 +405,9 @@ const App: React.FC = () => {
                   onDelete={handleDeleteStudent} 
                   onUpdate={handleUpdateStudent}
                   config={config}
+                  schools={schools}
+                  clubs={clubs}
+                  recruiters={recruiters}
                 />
                </div>
             </div>

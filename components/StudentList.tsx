@@ -1,7 +1,7 @@
-
 import React, { useState, useMemo } from 'react';
-import { StudentProfile, ConfigData } from '../types';
+import { StudentProfile, ConfigData, SchoolData } from '../types';
 import { Edit, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Filter, X, Save } from 'lucide-react';
+import FilterModal, { FilterState } from './FilterModal';
 
 interface StudentListProps {
   students: StudentProfile[];
@@ -9,6 +9,9 @@ interface StudentListProps {
   onDelete: (id: string) => void;
   onUpdate?: (student: StudentProfile) => void;
   config: ConfigData;
+  schools: SchoolData[];
+  clubs: string[];
+  recruiters: string[];
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -33,15 +36,23 @@ const ACTION_PRIORITIES: Record<string, number> = {
   "見送り": 7
 };
 
-const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, onUpdate, config }) => {
+const StudentList: React.FC<StudentListProps> = ({ 
+    students, onEdit, onDelete, onUpdate, config,
+    schools, clubs, recruiters 
+}) => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
   
   // Filtering & Sorting State
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [schoolFilter, setSchoolFilter] = useState("");
-  const [clubFilter, setClubFilter] = useState("");
-  const [actionFilter, setActionFilter] = useState("");
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>({
+    municipalities: [],
+    schoolNames: [],
+    clubNames: [],
+    recruiterTypes: [],
+    actions: []
+  });
+
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   
   // State for memo editing in detail view
@@ -50,9 +61,7 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
   // State for inline editing
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
 
-  // Extract unique options for filters
-  const schoolOptions = useMemo(() => Array.from(new Set(students.map(s => s.schoolName))).sort(), [students]);
-  const clubOptions = useMemo(() => Array.from(new Set(students.map(s => s.clubName))).sort(), [students]);
+  // Derive action options from constant
   const actionOptions = Object.keys(ACTION_PRIORITIES);
 
   const getNextAction = (student: StudentProfile) => {
@@ -94,14 +103,20 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
     let result = [...students];
 
     // Filtering
-    if (schoolFilter) {
-      result = result.filter(s => s.schoolName === schoolFilter);
+    if (filters.municipalities.length > 0) {
+      result = result.filter(s => filters.municipalities.includes(s.municipality));
     }
-    if (clubFilter) {
-      result = result.filter(s => s.clubName === clubFilter);
+    if (filters.schoolNames.length > 0) {
+      result = result.filter(s => filters.schoolNames.includes(s.schoolName));
     }
-    if (actionFilter) {
-      result = result.filter(s => getNextAction(s).text === actionFilter);
+    if (filters.clubNames.length > 0) {
+      result = result.filter(s => filters.clubNames.includes(s.clubName));
+    }
+    if (filters.recruiterTypes.length > 0) {
+      result = result.filter(s => filters.recruiterTypes.includes(s.recruiterType));
+    }
+    if (filters.actions.length > 0) {
+      result = result.filter(s => filters.actions.includes(getNextAction(s).text));
     }
 
     // Sorting
@@ -125,7 +140,9 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
     }
 
     return result;
-  }, [students, schoolFilter, clubFilter, actionFilter, sortConfig]);
+  }, [students, filters, sortConfig]);
+
+  const activeFilterCount = filters.municipalities.length + filters.schoolNames.length + filters.clubNames.length + filters.recruiterTypes.length + filters.actions.length;
 
   const handleSort = (key: keyof StudentProfile | 'nextAction') => {
     let direction: SortDirection = 'asc';
@@ -203,16 +220,19 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
     setEditingCell(null);
   };
 
-  const handleFilterChange = (setter: (val: string) => void, value: string) => {
-    setter(value);
-    // Auto-collapse filters on mobile when selection is made to save space
-    if (window.innerWidth < 768 && value !== "") {
-        setIsFilterOpen(false);
-    }
-  };
-
   return (
     <div className="h-full flex flex-col">
+      <FilterModal 
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        onApply={setFilters}
+        currentFilters={filters}
+        schools={schools}
+        clubs={clubs}
+        recruiters={recruiters}
+        actions={actionOptions}
+      />
+
       {/* Filter Toolbar */}
       <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-col gap-4">
          <div className="flex items-center justify-between w-full">
@@ -220,57 +240,39 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
                 <Filter size={20} />
                 絞り込み:
              </div>
-             <div className="flex items-center gap-4">
-                 <div className="text-sm text-slate-400">
-                    {processedStudents.length} 件表示
-                 </div>
-                 <button 
-                    onClick={() => setIsFilterOpen(!isFilterOpen)} 
-                    className={`md:hidden border p-2 rounded-md text-slate-600 transition-colors ${isFilterOpen ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-white border-slate-300 hover:bg-slate-50'}`}
-                    title={isFilterOpen ? "フィルタを閉じる" : "フィルタを開く"}
-                 >
-                    {isFilterOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                 </button>
+             <div className="text-sm text-slate-400">
+                {processedStudents.length} / {students.length} 件表示
              </div>
          </div>
         
-        {/* Filters Group - Collapsible on Mobile */}
-        <div className={`flex flex-col md:flex-row gap-4 w-full md:w-auto transition-all duration-300 ${isFilterOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 md:max-h-none md:opacity-100 overflow-hidden'}`}>
-            <select 
-                value={actionFilter}
-                onChange={(e) => handleFilterChange(setActionFilter, e.target.value)}
-                className="border border-slate-300 rounded-md py-2 pl-3 pr-10 text-base focus:ring-2 focus:ring-blue-200 outline-none h-10 w-full md:w-auto bg-white"
+        {/* Filters Group */}
+        <div className="flex flex-wrap gap-4 w-full items-center">
+            <button 
+                onClick={() => setIsFilterModalOpen(true)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${activeFilterCount > 0 ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}
             >
-                <option value="">すべてのアクション</option>
-                {actionOptions.map(a => <option key={a} value={a}>{a}</option>)}
-            </select>
+                <span>条件を選択...</span>
+                {activeFilterCount > 0 && (
+                    <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">{activeFilterCount}</span>
+                )}
+            </button>
 
-            <select 
-                value={schoolFilter}
-                onChange={(e) => handleFilterChange(setSchoolFilter, e.target.value)}
-                className="border border-slate-300 rounded-md py-2 pl-3 pr-10 text-base focus:ring-2 focus:ring-blue-200 outline-none h-10 w-full md:w-auto bg-white"
-            >
-                <option value="">すべての中学校</option>
-                {schoolOptions.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-
-            <select 
-                value={clubFilter}
-                onChange={(e) => handleFilterChange(setClubFilter, e.target.value)}
-                className="border border-slate-300 rounded-md py-2 pl-3 pr-10 text-base focus:ring-2 focus:ring-blue-200 outline-none h-10 w-full md:w-auto bg-white"
-            >
-                <option value="">すべての部活</option>
-                {clubOptions.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-
-             {(schoolFilter || clubFilter || actionFilter) && (
-                <button 
-                    onClick={() => { setSchoolFilter(""); setClubFilter(""); setActionFilter(""); }}
-                    className="text-slate-400 hover:text-red-500 text-base flex items-center gap-1 px-3 py-2 rounded hover:bg-red-50 transition-colors self-start md:self-auto border border-transparent md:border-slate-200"
-                >
-                    <X size={18} />
-                    条件クリア
-                </button>
+             {activeFilterCount > 0 && (
+                <>
+                    {filters.actions.map(a => <span key={a} className="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs text-slate-600 flex items-center gap-1">{a} <X size={12} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, actions: prev.actions.filter(x => x !== a)}))} /></span>)}
+                    {filters.municipalities.map(m => <span key={m} className="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs text-slate-600 flex items-center gap-1">{m} <X size={12} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, municipalities: prev.municipalities.filter(x => x !== m)}))} /></span>)}
+                    {filters.schoolNames.map(s => <span key={s} className="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs text-slate-600 flex items-center gap-1">{s} <X size={12} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, schoolNames: prev.schoolNames.filter(x => x !== s)}))} /></span>)}
+                    {filters.clubNames.map(c => <span key={c} className="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs text-slate-600 flex items-center gap-1">{c} <X size={12} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, clubNames: prev.clubNames.filter(x => x !== c)}))} /></span>)}
+                    {filters.recruiterTypes.map(r => <span key={r} className="bg-white border border-slate-200 px-3 py-1 rounded-full text-xs text-slate-600 flex items-center gap-1">{r} <X size={12} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, recruiterTypes: prev.recruiterTypes.filter(x => x !== r)}))} /></span>)}
+                    
+                    <button 
+                        onClick={() => setFilters({municipalities: [], schoolNames: [], clubNames: [], recruiterTypes: [], actions: []})}
+                        className="text-slate-400 hover:text-red-500 text-sm flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                    >
+                        <X size={16} />
+                        クリア
+                    </button>
+                </>
             )}
         </div>
       </div>
