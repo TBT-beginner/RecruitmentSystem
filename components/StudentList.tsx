@@ -56,10 +56,10 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
   const actionOptions = Object.keys(ACTION_PRIORITIES);
 
   const getNextAction = (student: StudentProfile) => {
-    // 注意: このロジックはスプレッドシート内の特定の文字列（未定, 保留, ○, ×, 確約/合格など）に依存しています。
+    // 注意: このロジックはスプレッドシート内の特定の文字列（未定, 保留, ○, ×, S1-S4など）に依存しています。
     // 文字列が変更されると正しく機能しない可能性があります。
     
-    // 完了: 未定でも保留でもない (つまり確約、合格、辞退など)
+    // 完了: 未定でも保留でもない (つまりS1, S2... 合格、または×などの完了ステータス)
     if (student.result !== '未定' && student.result !== '保留') {
       return { text: "完了", color: "text-slate-400 bg-slate-100" };
     }
@@ -150,8 +150,11 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
   };
 
   const getResultColor = (result: string) => {
-    if (result === '確約/合格') return 'bg-orange-100 text-orange-800 border-orange-200 font-bold';
-    if (result && result.includes('辞退')) return 'bg-gray-200 text-gray-500 border-gray-300 line-through';
+    // S1~S4, なし は合格扱い
+    if (['S1', 'S2', 'S3', 'S4', 'なし', '確約/合格'].includes(result)) return 'bg-orange-100 text-orange-800 border-orange-200 font-bold';
+    // ×または辞退 は辞退扱い
+    if (result === '×' || (result && result.includes('辞退'))) return 'bg-gray-200 text-gray-500 border-gray-300 line-through';
+    // その他（未定、保留など）
     return 'text-slate-600';
   };
 
@@ -187,9 +190,10 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
 
   const handleCellUpdate = (val: string, student: StudentProfile, field: keyof StudentProfile) => {
     let updatedStudent = { ...student, [field]: val };
-    // If visit date is set to '×', result becomes declined
+    // If visit date is set to '×', result becomes '×' (or declined)
     if (field === 'visitDate' && val === '×') {
-        const declined = config.results.find(r => r.includes('辞退')) || '辞退';
+        // 設定リストに '×' があればそれを使う、なければ '辞退' を探す
+        const declined = config.results.includes('×') ? '×' : (config.results.find(r => r.includes('辞退')) || '×');
         updatedStudent.result = declined;
     }
 

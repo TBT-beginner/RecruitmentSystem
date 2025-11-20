@@ -100,10 +100,10 @@ const StudentForm: React.FC<StudentFormProps> = ({
   const handleVisitDateChange = (value: string) => {
     setFormData(prev => {
         const updates: any = { visitDate: value };
-        // If visit is impossible (x), set result to DECLINED (assuming '辞退' or similar exists in results)
+        // If visit is impossible (x), set result to DECLINED (or '×')
         if (value === '×') {
-            // Try to find "辞退" or similar in results list
-            const declinedStatus = results.find(r => r.includes('辞退')) || results[results.length - 1];
+            // Try to find "×" first, then "辞退", then fallback to last item
+            const declinedStatus = results.includes('×') ? '×' : (results.find(r => r.includes('辞退')) || results[results.length - 1]);
             if (declinedStatus) updates.result = declinedStatus;
         }
         return { ...prev, ...updates };

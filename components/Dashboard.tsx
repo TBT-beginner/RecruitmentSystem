@@ -68,8 +68,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   const total = filteredStudents.length;
   const contacted = filteredStudents.filter(s => s.callDatePrincipal || s.callDateAdvisor).length;
   const visited = filteredStudents.filter(s => s.visitDate && s.visitDate !== '×').length;
-  // Assume "確約/合格" is always the accepted status for now, or rely on what's in results
-  const accepted = filteredStudents.filter(s => s.result === '確約/合格').length;
+  
+  // 合格定義: S1, S2, S3, S4, なし (旧データの'確約/合格'も念のため含める)
+  const acceptedStatuses = ['S1', 'S2', 'S3', 'S4', 'なし', '確約/合格'];
+  const accepted = filteredStudents.filter(s => acceptedStatuses.includes(s.result)).length;
 
   const funnelData = [
     { name: 'リスト登録', value: total },
