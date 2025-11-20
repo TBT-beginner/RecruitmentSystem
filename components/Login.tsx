@@ -1,27 +1,13 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { GraduationCap, AlertCircle } from 'lucide-react';
 
 interface LoginProps {
   onLogin: () => void;
-  spreadsheetId: string;
-  setSpreadsheetId: (id: string) => void;
   error: string | null;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, spreadsheetId, setSpreadsheetId, error }) => {
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-
-  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSpreadsheetId(e.target.value);
-    // Safe LocalStorage access
-    try {
-        localStorage.setItem('spreadsheetId', e.target.value);
-    } catch (e) {
-        // ignore
-    }
-  };
-
+const Login: React.FC<LoginProps> = ({ onLogin, error }) => {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -40,44 +26,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, spreadsheetId, setSpreadsheetId,
                     <div className="text-sm text-red-700">{error}</div>
                 </div>
             )}
-
-            <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                    GoogleスプレッドシートID
-                </label>
-                <input 
-                    type="text" 
-                    value={spreadsheetId}
-                    onChange={handleIdChange}
-                    placeholder="1A2B3C..."
-                    className="w-full border border-slate-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-                <button 
-                    onClick={() => setIsHelpOpen(!isHelpOpen)}
-                    className="text-xs text-blue-600 mt-2 hover:underline flex items-center gap-1"
-                >
-                    <AlertCircle size={12} /> スプレッドシートIDとは？ / シート構成について
-                </button>
-            </div>
-
-            {isHelpOpen && (
-                <div className="bg-slate-50 p-4 rounded-lg text-sm text-slate-600 space-y-2 border border-slate-200">
-                    <p>スプレッドシートのURLの <code>/d/</code> と <code>/edit</code> の間の文字列です。</p>
-                    <p className="text-xs text-slate-400 break-all">例: docs.google.com/spreadsheets/d/<strong>この部分</strong>/edit</p>
-                    <hr className="border-slate-200 my-2"/>
-                    <p className="font-bold">必要なシート構成:</p>
-                    <ul className="list-disc list-inside space-y-1 text-xs">
-                        <li><strong>Students</strong>: 生徒データ (A-V列)</li>
-                        <li><strong>Schools</strong>: 学校マスタ (A-F列)</li>
-                        <li><strong>Clubs</strong>: 部活マスタ (A列)</li>
-                    </ul>
-                </div>
-            )}
+            
+            <p className="text-slate-600 text-center text-sm mb-4">
+              スプレッドシートは自動的に連携されます。<br />
+              Googleアカウントでログインしてください。
+            </p>
 
             <button
                 onClick={onLogin}
-                disabled={!spreadsheetId}
-                className="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-3 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-3 shadow-sm"
             >
                 <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
                 Googleアカウントでログイン

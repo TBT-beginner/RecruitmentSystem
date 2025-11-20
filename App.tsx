@@ -10,19 +10,13 @@ import Login from './components/Login';
 import { sheetService } from './services/sheetService';
 import { LayoutDashboard, List, UserPlus, GraduationCap, Settings, Menu, ChevronLeft, LogOut, Loader2 } from 'lucide-react';
 
-const DEFAULT_SPREADSHEET_ID = '1Xfq3GPnLGzFM2z4vG3eDStlUKSHpWQJqMneeDRgrzDY';
+// Spreadsheet ID hardcoded here
+const SPREADSHEET_ID = '1Xfq3GPnLGzFM2z4vG3eDStlUKSHpWQJqMneeDRgrzDY';
 
 const App: React.FC = () => {
   // Auth State
   const [user, setUser] = useState<GoogleUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [spreadsheetId, setSpreadsheetId] = useState<string>(() => {
-    try {
-      return localStorage.getItem('spreadsheetId') || DEFAULT_SPREADSHEET_ID;
-    } catch (e) {
-      return DEFAULT_SPREADSHEET_ID;
-    }
-  });
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -52,19 +46,8 @@ const App: React.FC = () => {
   // Handle Login Logic
   const handleLogin = async () => {
     setLoginError(null);
-    if (!spreadsheetId) {
-        setLoginError("スプレッドシートIDを入力してください");
-        return;
-    }
-
+    
     try {
-        // Save ID properly
-        try {
-          localStorage.setItem('spreadsheetId', spreadsheetId);
-        } catch (e) {
-          console.warn('LocalStorage access denied');
-        }
-
         const token = await sheetService.login();
         const userInfo = await sheetService.getUserInfo(token);
         
@@ -80,7 +63,7 @@ const App: React.FC = () => {
         // Fetch Data
         setIsLoading(true);
         try {
-            const data = await sheetService.fetchAllData(spreadsheetId, token);
+            const data = await sheetService.fetchAllData(SPREADSHEET_ID, token);
             setStudents(data.students);
             setSchools(data.schools.length > 0 ? data.schools : INITIAL_SCHOOL_DATABASE);
             setClubs(data.clubs.length > 0 ? data.clubs : INITIAL_CLUBS);
@@ -143,7 +126,7 @@ const App: React.FC = () => {
     setActiveTab('list');
 
     try {
-        await sheetService.appendStudent(spreadsheetId, accessToken, studentWithId);
+        await sheetService.appendStudent(SPREADSHEET_ID, accessToken, studentWithId);
     } catch (e) {
         alert("保存に失敗しました。リロードしてください。");
         console.error(e);
@@ -161,7 +144,7 @@ const App: React.FC = () => {
     }
 
     try {
-        await sheetService.updateStudent(spreadsheetId, accessToken, updatedStudent, students);
+        await sheetService.updateStudent(SPREADSHEET_ID, accessToken, updatedStudent, students);
     } catch (e) {
         alert("更新に失敗しました。");
         console.error(e);
@@ -181,7 +164,7 @@ const App: React.FC = () => {
       }
 
       try {
-          await sheetService.deleteStudent(spreadsheetId, accessToken, id);
+          await sheetService.deleteStudent(SPREADSHEET_ID, accessToken, id);
       } catch (e) {
           alert("削除に失敗しました。");
           console.error(e);
@@ -193,14 +176,14 @@ const App: React.FC = () => {
   const handleSchoolsUpdate = async (newSchools: SchoolData[]) => {
       setSchools(newSchools);
       if (accessToken) {
-          await sheetService.syncMasterData(spreadsheetId, accessToken, newSchools, clubs);
+          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, newSchools, clubs);
       }
   };
 
   const handleClubsUpdate = async (newClubs: string[]) => {
       setClubs(newClubs);
        if (accessToken) {
-          await sheetService.syncMasterData(spreadsheetId, accessToken, schools, newClubs);
+          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, schools, newClubs);
       }
   };
 
@@ -208,7 +191,7 @@ const App: React.FC = () => {
     const updatedSchools = [...schools, newSchool];
     setSchools(updatedSchools);
      if (accessToken) {
-        await sheetService.syncMasterData(spreadsheetId, accessToken, updatedSchools, clubs);
+        await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, updatedSchools, clubs);
     }
   };
 
@@ -233,8 +216,6 @@ const App: React.FC = () => {
             )}
             <Login 
                 onLogin={handleLogin} 
-                spreadsheetId={spreadsheetId}
-                setSpreadsheetId={setSpreadsheetId}
                 error={loginError}
             />
         </>
