@@ -1,7 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
 import { StudentProfile, ProspectLevel, RecruitmentResult, ScholarshipRank } from '../types';
-import { CLUBS } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Filter, X, Settings, Check, Edit2 } from 'lucide-react';
 
@@ -9,11 +8,12 @@ interface DashboardProps {
   students: StudentProfile[];
   recruitmentTarget: number;
   setRecruitmentTarget: (target: number) => void;
+  clubs: string[];
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-const Dashboard: React.FC<DashboardProps> = ({ students, recruitmentTarget, setRecruitmentTarget }) => {
+const Dashboard: React.FC<DashboardProps> = ({ students, recruitmentTarget, setRecruitmentTarget, clubs }) => {
   // Target Editing State
   const [isEditingTarget, setIsEditingTarget] = useState(false);
   const [tempTarget, setTempTarget] = useState(recruitmentTarget.toString());
@@ -41,14 +41,14 @@ const Dashboard: React.FC<DashboardProps> = ({ students, recruitmentTarget, setR
     count: filteredStudents.filter(s => s.prospect === level).length
   }));
 
-  // 2. Data for Club Distribution (Fixed Order)
+  // 2. Data for Club Distribution (Fixed Order based on Master Data)
   const clubCounts: Record<string, number> = {};
   filteredStudents.forEach(s => {
     clubCounts[s.clubName] = (clubCounts[s.clubName] || 0) + 1;
   });
   
-  // Use CLUBS constant for ordering to avoid ranking
-  const clubData = CLUBS.map(clubName => ({
+  // Use clubs prop for ordering
+  const clubData = clubs.map(clubName => ({
     name: clubName,
     count: clubCounts[clubName] || 0
   }));

@@ -347,6 +347,7 @@ const App: React.FC = () => {
               students={students} 
               recruitmentTarget={recruitmentTarget}
               setRecruitmentTarget={setRecruitmentTarget}
+              clubs={clubs}
             />
           )}
           
