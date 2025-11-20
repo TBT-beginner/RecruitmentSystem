@@ -7,8 +7,8 @@ import Dashboard from './components/Dashboard';
 import MasterData from './components/MasterData';
 import Login from './components/Login';
 import { sheetService } from './services/sheetService';
-import { LayoutDashboard, List, UserPlus, GraduationCap, Settings, Menu, ChevronLeft, LogOut, Loader2 } from 'lucide-react';
-import { DEFAULT_RANKS, DEFAULT_RESULTS, DEFAULT_PROSPECTS } from './constants';
+import { LayoutDashboard, List, UserPlus, GraduationCap, Settings, Menu, ChevronLeft, LogOut, Loader2, RefreshCw } from 'lucide-react';
+import { DEFAULT_RANKS, DEFAULT_RESULTS, DEFAULT_PROSPECTS, DEFAULT_TARGET } from './constants';
 
 // Spreadsheet ID
 const SPREADSHEET_ID = '1Xfq3GPnLGzFM2z4vG3eDStlUKSHpWQJqMneeDRgrzDY';
@@ -29,7 +29,8 @@ const App: React.FC = () => {
   const [config, setConfig] = useState<ConfigData>({
       ranks: DEFAULT_RANKS,
       results: DEFAULT_RESULTS,
-      prospects: DEFAULT_PROSPECTS
+      prospects: DEFAULT_PROSPECTS,
+      recruitmentTarget: DEFAULT_TARGET
   });
   
   const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
@@ -66,7 +67,15 @@ const App: React.FC = () => {
         setAccessToken(token);
         setUser(userInfo);
         
-        // Fetch Data
+        await fetchData(token);
+
+    } catch (error: any) {
+        console.error(error);
+        setLoginError("ログインに失敗しました。" + (error.message || "ポップアップがブロックされていないか確認してください。"));
+    }
+  };
+
+  const fetchData = async (token: string) => {
         setIsLoading(true);
         try {
             const data = await sheetService.fetchAllData(SPREADSHEET_ID, token);
@@ -84,16 +93,15 @@ const App: React.FC = () => {
                 errorMsg += "スプレッドシートへのアクセス権限がありません。";
             }
             setLoginError(errorMsg);
-            setAccessToken(null);
-            setUser(null);
         } finally {
             setIsLoading(false);
         }
+  };
 
-    } catch (error: any) {
-        console.error(error);
-        setLoginError("ログインに失敗しました。" + (error.message || "ポップアップがブロックされていないか確認してください。"));
-    }
+  const handleManualRefresh = async () => {
+      if (accessToken) {
+          await fetchData(accessToken);
+      }
   };
 
   const handleLogout = () => {
@@ -101,9 +109,6 @@ const App: React.FC = () => {
     setAccessToken(null);
     setStudents([]);
   };
-
-  // Recruitment Target State
-  const [recruitmentTarget, setRecruitmentTarget] = useState<number>(30);
 
   // Calculate next ID for new entries
   const nextNo = students.length > 0 ? Math.max(...students.map(s => s.no)) + 1 : 1;
@@ -194,6 +199,15 @@ const App: React.FC = () => {
 
       if (accessToken) {
           await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, newSchools, newClubs, newRecruiters, newConfig);
+      }
+  };
+
+  // Special handler for target update from dashboard
+  const handleTargetUpdate = async (newTarget: number) => {
+      const newConfig = { ...config, recruitmentTarget: newTarget };
+      setConfig(newConfig);
+      if (accessToken) {
+          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, schools, clubs, recruiters, newConfig);
       }
   };
 
@@ -346,18 +360,34 @@ const App: React.FC = () => {
               {activeTab === 'form' && (editingStudent ? '生徒情報編集' : '新規生徒登録')}
             </h2>
           </div>
-          <div className="text-sm text-slate-500 hidden md:block whitespace-nowrap ml-4">
-             接続先: Google Sheets
+          <div className="flex items-center gap-4">
+             <button
+                onClick={handleManualRefresh}
+                className={`flex items-center gap-2 px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors font-medium ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isLoading}
+             >
+                <RefreshCw size={20} className={isLoading ? 'animate-spin' : ''} />
+                <span className="hidden md:inline">データ更新</span>
+             </button>
+             <div className="text-sm text-slate-500 hidden md:block whitespace-nowrap">
+                接続先: Google Sheets
+             </div>
           </div>
         </header>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-hidden relative bg-slate-50">
+            {isLoading && activeTab !== 'list' && (
+                 <div className="absolute inset-0 bg-white/50 z-20 flex items-center justify-center">
+                    <Loader2 className="animate-spin text-blue-600" size={32} />
+                 </div>
+            )}
+          
           {activeTab === 'dashboard' && (
             <Dashboard 
               students={students} 
-              recruitmentTarget={recruitmentTarget}
-              setRecruitmentTarget={setRecruitmentTarget}
+              recruitmentTarget={config.recruitmentTarget}
+              setRecruitmentTarget={handleTargetUpdate}
               clubs={clubs}
               ranks={config.ranks}
               prospects={config.prospects}

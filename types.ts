@@ -60,4 +60,5 @@ export interface ConfigData {
   ranks: string[];
   results: string[];
   prospects: string[];
+  recruitmentTarget: number;
 }

@@ -200,7 +200,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
   };
 
   // --- Config Handlers ---
-  const handleConfigUpdate = (type: keyof ConfigData, action: 'add' | 'delete', value: string) => {
+  const handleConfigUpdate = (type: Exclude<keyof ConfigData, 'recruitmentTarget'>, action: 'add' | 'delete', value: string) => {
       const currentList = config[type];
       let newList = [...currentList];
       if (action === 'add') {

@@ -1,6 +1,6 @@
 
 import { StudentProfile, SchoolData, ConfigData } from '../types';
-import { DEFAULT_RANKS, DEFAULT_RESULTS, DEFAULT_PROSPECTS } from '../constants';
+import { DEFAULT_RANKS, DEFAULT_RESULTS, DEFAULT_PROSPECTS, DEFAULT_TARGET } from '../constants';
 
 declare const google: any;
 
@@ -87,10 +87,16 @@ export class SheetService {
     });
     const recruitersData = await recruitersResp.json();
 
-    // Fetch Config (Ranks, Results, Prospects)
-    let configData: ConfigData = { ranks: DEFAULT_RANKS, results: DEFAULT_RESULTS, prospects: DEFAULT_PROSPECTS };
+    // Fetch Config (Ranks, Results, Prospects, Target)
+    let configData: ConfigData = { 
+        ranks: DEFAULT_RANKS, 
+        results: DEFAULT_RESULTS, 
+        prospects: DEFAULT_PROSPECTS,
+        recruitmentTarget: DEFAULT_TARGET
+    };
     try {
-        const configResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Config!A2:C?valueRenderOption=FORMATTED_VALUE`, {
+        // Config Sheet Structure: A=Rank, B=Result, C=Prospect, D=Target
+        const configResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Config!A2:D?valueRenderOption=FORMATTED_VALUE`, {
             headers: { Authorization: `Bearer ${accessToken}` },
         });
         const configResult = await configResp.json();
@@ -99,14 +105,20 @@ export class SheetService {
                 ranks: configResult.values.map((r: any[]) => r[0]).filter((v: any) => v),
                 results: configResult.values.map((r: any[]) => r[1]).filter((v: any) => v),
                 prospects: configResult.values.map((r: any[]) => r[2]).filter((v: any) => v),
+                // Target is expected in D2 (first row of data, index 3)
+                recruitmentTarget: (configResult.values[0] && configResult.values[0][3]) 
+                    ? parseInt(configResult.values[0][3], 10) 
+                    : DEFAULT_TARGET
             };
+            
             // Fallback if empty
             if (configData.ranks.length === 0) configData.ranks = DEFAULT_RANKS;
             if (configData.results.length === 0) configData.results = DEFAULT_RESULTS;
             if (configData.prospects.length === 0) configData.prospects = DEFAULT_PROSPECTS;
+            if (isNaN(configData.recruitmentTarget)) configData.recruitmentTarget = DEFAULT_TARGET;
         }
     } catch (e) {
-        console.warn("Config sheet not found, using defaults", e);
+        console.warn("Config sheet not found or invalid, using defaults", e);
     }
 
     return {
@@ -213,18 +225,27 @@ export class SheetService {
         body: JSON.stringify({ values: recruiterRows })
     });
 
-    // Sync Config
+    // Sync Config (Ranks, Results, Prospects, Target)
+    // Determine max length to ensure all lists are covered
     const maxLength = Math.max(config.ranks.length, config.results.length, config.prospects.length);
     const configRows = [];
     for (let i = 0; i < maxLength; i++) {
         configRows.push([
             config.ranks[i] || '',
             config.results[i] || '',
-            config.prospects[i] || ''
+            config.prospects[i] || '',
+            // Target is only in the first row (D2)
+            (i === 0 ? config.recruitmentTarget.toString() : '') 
         ]);
     }
+    
+    // If lists are empty but we need to save target
+    if (maxLength === 0) {
+        configRows.push(['', '', '', config.recruitmentTarget.toString()]);
+    }
+
     // Clear existing first (optional but safer if list shrinks) - simplify by just overwriting for now
-    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Config!A2:C?valueInputOption=USER_ENTERED`, {
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Config!A2:D?valueInputOption=USER_ENTERED`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ values: configRows })

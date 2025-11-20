@@ -84,6 +84,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     const val = parseInt(tempTarget, 10);
     if (!isNaN(val) && val > 0) {
       setRecruitmentTarget(val);
+    } else {
+        // Reset to valid current target if invalid input
+        setTempTarget(recruitmentTarget.toString());
     }
     setIsEditingTarget(false);
   };
