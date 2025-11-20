@@ -5,9 +5,9 @@ import { Save, Trash2, Plus, MapPin, Search, ArrowUpDown, ArrowUp, ArrowDown, Fi
 
 interface MasterDataProps {
   schools: SchoolData[];
-  setSchools: React.Dispatch<React.SetStateAction<SchoolData[]>>;
+  setSchools: (schools: SchoolData[]) => void; // Changed from React.Dispatch
   clubs: string[];
-  setClubs: React.Dispatch<React.SetStateAction<string[]>>;
+  setClubs: (clubs: string[]) => void; // Changed from React.Dispatch
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -72,14 +72,14 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
       headTeacher: ''
     };
 
-    setSchools(prev => [...prev, schoolToAdd]);
+    setSchools([...schools, schoolToAdd]);
     setNewSchool({ municipality: newSchool.municipality, name: '' });
     alert(`学校を追加しました (コード: ${schoolToAdd.code})`);
   };
 
   const handleDeleteSchool = (code: string) => {
     if (window.confirm('この学校情報を削除してもよろしいですか？（この学校に紐づく生徒データがある場合、表示に影響が出る可能性があります）')) {
-      setSchools(prev => prev.filter(s => s.code !== code));
+      setSchools(schools.filter(s => s.code !== code));
     }
   };
 
@@ -100,7 +100,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
 
   const saveEditSchool = () => {
     if (editingId && editingField) {
-      setSchools(prev => prev.map(s => 
+      setSchools(schools.map(s => 
         s.code === editingId ? { ...s, [editingField]: editValue } : s
       ));
       setEditingId(null);
@@ -121,13 +121,13 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
         alert('この部活動は既に登録されています。');
         return;
     }
-    setClubs(prev => [...prev, newClub.trim()]);
+    setClubs([...clubs, newClub.trim()]);
     setNewClub('');
   };
 
   const handleDeleteClub = (clubName: string) => {
     if (window.confirm(`「${clubName}」を削除しますか？`)) {
-      setClubs(prev => prev.filter(c => c !== clubName));
+      setClubs(clubs.filter(c => c !== clubName));
     }
   };
 
@@ -217,7 +217,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
             </button>
         </div>
 
-      <div className="flex-1 overflow-hidden p-4 md:p-8 flex flex-col gap-6 md:gap-8">
+      <div className="flex-1 overflow-y-auto md:overflow-hidden p-4 md:p-8 flex flex-col gap-6 md:gap-8">
       {activeTab === 'school' ? (
         <>
             {/* Add School Form */}
@@ -271,7 +271,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
             </div>
 
             {/* Table Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden min-h-[400px]">
                 {/* Toolbar */}
                 <div className="p-4 md:p-6 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-slate-50">
                 <h3 className="font-bold text-slate-700 flex items-center gap-3 text-lg">
@@ -425,7 +425,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
             </div>
 
             {/* Club List */}
-             <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
+             <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden min-h-[400px]">
                 <div className="p-6 border-b border-slate-200 bg-slate-50">
                      <h3 className="font-bold text-slate-700 flex items-center gap-3 text-lg">
                         登録済み部活動一覧 ({clubs.length}部)

@@ -1,24 +1,33 @@
 
 import React, { useState, useEffect } from 'react';
 import { INITIAL_STUDENTS, INITIAL_SCHOOL_DATABASE, CLUBS as INITIAL_CLUBS } from './constants';
-import { StudentProfile, TabType, SchoolData } from './types';
+import { StudentProfile, TabType, SchoolData, GoogleUser } from './types';
 import StudentForm from './components/StudentForm';
 import StudentList from './components/StudentList';
 import Dashboard from './components/Dashboard';
 import MasterData from './components/MasterData';
-import { LayoutDashboard, List, UserPlus, GraduationCap, Settings, Menu, ChevronLeft } from 'lucide-react';
+import Login from './components/Login';
+import { sheetService } from './services/sheetService';
+import { LayoutDashboard, List, UserPlus, GraduationCap, Settings, Menu, ChevronLeft, LogOut, Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
+  // Auth State
+  const [user, setUser] = useState<GoogleUser | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [spreadsheetId, setSpreadsheetId] = useState<string>(() => localStorage.getItem('spreadsheetId') || '');
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // App Data State
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
-  const [students, setStudents] = useState<StudentProfile[]>(INITIAL_STUDENTS);
-  const [schools, setSchools] = useState<SchoolData[]>(INITIAL_SCHOOL_DATABASE);
-  const [clubs, setClubs] = useState<string[]>(INITIAL_CLUBS);
-  const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
+  const [students, setStudents] = useState<StudentProfile[]>([]); // Start empty, fetch on load
+  const [schools, setSchools] = useState<SchoolData[]>([]);
+  const [clubs, setClubs] = useState<string[]>([]);
   
-  // Initialize sidebar state based on screen width
-  // Default to false (closed) for mobile-first approach
+  const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
+  // Initialize Logic
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -27,59 +36,149 @@ const App: React.FC = () => {
         setIsSidebarOpen(false);
       }
     };
-
-    // Set initial state based on current width
     handleResize();
-
-    // Optional: Listen for resize if we want dynamic adapting
-    // window.addEventListener('resize', handleResize);
-    // return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
+
+  // Handle Login Logic
+  const handleLogin = async () => {
+    setLoginError(null);
+    if (!spreadsheetId) {
+        setLoginError("スプレッドシートIDを入力してください");
+        return;
+    }
+
+    try {
+        const token = await sheetService.login();
+        const userInfo = await sheetService.getUserInfo(token);
+        
+        // Domain restriction check
+        if (userInfo.hd !== 'kiryo.ac.jp') {
+             setLoginError("kiryo.ac.jp ドメインのアカウントのみアクセス可能です。");
+             return;
+        }
+
+        setAccessToken(token);
+        setUser(userInfo);
+        
+        // Fetch Data
+        setIsLoading(true);
+        try {
+            const data = await sheetService.fetchAllData(spreadsheetId, token);
+            setStudents(data.students);
+            setSchools(data.schools.length > 0 ? data.schools : INITIAL_SCHOOL_DATABASE);
+            setClubs(data.clubs.length > 0 ? data.clubs : INITIAL_CLUBS);
+        } catch (e) {
+            console.error(e);
+            setLoginError("データの取得に失敗しました。スプレッドシートIDやシート構成を確認してください。");
+            setAccessToken(null);
+            setUser(null);
+        } finally {
+            setIsLoading(false);
+        }
+
+    } catch (error: any) {
+        console.error(error);
+        setLoginError("ログインに失敗しました。" + (error.message || ""));
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setAccessToken(null);
+    setStudents([]);
+  };
+
   // Recruitment Target State
   const [recruitmentTarget, setRecruitmentTarget] = useState<number>(30);
 
-  // Calculate next ID for new entries
+  // Calculate next ID for new entries (Fallback logic if needed)
   const nextNo = students.length > 0 ? Math.max(...students.map(s => s.no)) + 1 : 1;
 
   const handleNavClick = (tab: TabType) => {
     setActiveTab(tab);
     setEditingStudent(null);
-    // Close sidebar on mobile when a link is clicked
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
   };
 
-  const handleAddStudent = (newStudent: StudentProfile) => {
+  // CRUD Operations with API
+  const handleAddStudent = async (newStudent: StudentProfile) => {
+    if (!accessToken) return;
     const studentWithId = { ...newStudent, id: crypto.randomUUID() };
+    
+    // Optimistic Update
     setStudents(prev => [...prev, studentWithId]);
     setActiveTab('list');
+
+    try {
+        await sheetService.appendStudent(spreadsheetId, accessToken, studentWithId);
+    } catch (e) {
+        alert("保存に失敗しました。リロードしてください。");
+        console.error(e);
+    }
   };
 
-  const handleUpdateStudent = (updatedStudent: StudentProfile) => {
+  const handleUpdateStudent = async (updatedStudent: StudentProfile) => {
+    if (!accessToken) return;
+
+    // Optimistic Update
     setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
-    // Only close edit mode if we were in the form view
     if (activeTab === 'form') {
       setEditingStudent(null);
       setActiveTab('list');
     }
+
+    try {
+        await sheetService.updateStudent(spreadsheetId, accessToken, updatedStudent, students);
+    } catch (e) {
+        alert("更新に失敗しました。");
+        console.error(e);
+    }
   };
 
-  const handleDeleteStudent = (id: string) => {
+  const handleDeleteStudent = async (id: string) => {
+    if (!accessToken) return;
     if (window.confirm('本当にこの生徒データを削除しますか？')) {
+      const target = students.find(s => s.id === id);
+      
+      // Optimistic Update
       setStudents(prev => prev.filter(s => s.id !== id));
-      // If we were editing this student, go back to list
       if (editingStudent?.id === id) {
         setEditingStudent(null);
         setActiveTab('list');
       }
+
+      try {
+          await sheetService.deleteStudent(spreadsheetId, accessToken, id);
+      } catch (e) {
+          alert("削除に失敗しました。");
+          console.error(e);
+      }
     }
   };
 
-  // Callback to add a school directly from StudentForm
-  const handleDirectAddSchool = (newSchool: SchoolData) => {
-    setSchools(prev => [...prev, newSchool]);
+  // Master Data Sync Wrapper
+  const handleSchoolsUpdate = async (newSchools: SchoolData[]) => {
+      setSchools(newSchools);
+      if (accessToken) {
+          await sheetService.syncMasterData(spreadsheetId, accessToken, newSchools, clubs);
+      }
+  };
+
+  const handleClubsUpdate = async (newClubs: string[]) => {
+      setClubs(newClubs);
+       if (accessToken) {
+          await sheetService.syncMasterData(spreadsheetId, accessToken, schools, newClubs);
+      }
+  };
+
+  const handleDirectAddSchool = async (newSchool: SchoolData) => {
+    const updatedSchools = [...schools, newSchool];
+    setSchools(updatedSchools);
+     if (accessToken) {
+        await sheetService.syncMasterData(spreadsheetId, accessToken, updatedSchools, clubs);
+    }
   };
 
   const startEdit = (student: StudentProfile) => {
@@ -91,6 +190,25 @@ const App: React.FC = () => {
     setEditingStudent(null);
     setActiveTab('list');
   };
+
+  if (!user || !accessToken) {
+      return (
+        <>
+            {isLoading && (
+                <div className="fixed inset-0 bg-white/80 z-50 flex flex-col items-center justify-center">
+                    <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
+                    <p className="text-slate-600 font-bold">データを読み込んでいます...</p>
+                </div>
+            )}
+            <Login 
+                onLogin={handleLogin} 
+                spreadsheetId={spreadsheetId}
+                setSpreadsheetId={setSpreadsheetId}
+                error={loginError}
+            />
+        </>
+      );
+  }
 
   return (
     <div className="flex h-full bg-slate-50 overflow-hidden relative">
@@ -119,6 +237,14 @@ const App: React.FC = () => {
             <h1 className="font-bold text-xl leading-tight">2026年度入試</h1>
             <p className="text-sm text-slate-400">特技推薦勧誘管理</p>
           </div>
+        </div>
+
+        <div className="px-6 py-4 flex items-center gap-3 border-b border-slate-800 min-w-[18rem]">
+            <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full border border-slate-600" />
+            <div className="overflow-hidden">
+                <p className="text-sm font-bold truncate">{user.name}</p>
+                <p className="text-xs text-slate-400 truncate">{user.email}</p>
+            </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-3 min-w-[18rem] overflow-y-auto">
@@ -172,8 +298,10 @@ const App: React.FC = () => {
           </div>
         </nav>
 
-        <div className="p-4 border-t border-slate-800 text-sm text-slate-500 text-center min-w-[18rem]">
-          © 2025 Recruitment System
+        <div className="p-4 border-t border-slate-800 min-w-[18rem]">
+          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-red-400 transition-colors text-sm py-2">
+             <LogOut size={16} /> ログアウト
+          </button>
         </div>
       </aside>
 
@@ -197,7 +325,7 @@ const App: React.FC = () => {
             </h2>
           </div>
           <div className="text-sm text-slate-500 hidden md:block whitespace-nowrap ml-4">
-            最終更新: {new Date().toLocaleDateString()}
+             接続先: Google Sheets
           </div>
         </header>
 
@@ -227,9 +355,9 @@ const App: React.FC = () => {
           {activeTab === 'master' && (
             <MasterData 
               schools={schools} 
-              setSchools={setSchools} 
+              setSchools={handleSchoolsUpdate}
               clubs={clubs}
-              setClubs={setClubs}
+              setClubs={handleClubsUpdate}
             />
           )}
 

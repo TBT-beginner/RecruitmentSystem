@@ -1,8 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { StudentProfile, ProspectLevel, RecruitmentResult } from '../types';
-import { RECRUITERS } from '../constants';
-import { Edit, Trash2, X, Eye, ArrowRightCircle, Save, Filter, ArrowUpDown, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Calendar, XCircle, ChevronLeft } from 'lucide-react';
+import { Edit, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Filter, X, Save } from 'lucide-react';
 
 interface StudentListProps {
   students: StudentProfile[];
@@ -410,16 +409,16 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
                             autoFocus
                             defaultValue={student.visitDate === '×' ? '' : student.visitDate}
                             onChange={(e) => handleCellUpdate(e.target.value, student, 'visitDate')}
-                            onBlur={() => setEditingCell(null)} // Close on blur if nothing clicked
+                            onBlur={() => setEditingCell(null)} 
                             className="flex-1 text-sm outline-none w-24 bg-transparent h-full"
                           />
                           <button 
-                            onClick={(e) => {
-                                e.stopPropagation(); // Prevent bubbling
-                                e.preventDefault();
+                            onMouseDown={(e) => {
+                                e.preventDefault(); // Prevent input blur from triggering before click
+                                e.stopPropagation();
                                 handleCellUpdate('×', student, 'visitDate');
                             }}
-                            className="bg-red-100 hover:bg-red-200 text-red-600 px-2 py-0.5 rounded text-xs font-bold border border-red-200 mr-1"
+                            className="bg-red-100 hover:bg-red-200 text-red-600 px-2 py-0.5 rounded text-xs font-bold border border-red-200 mr-1 flex-shrink-0"
                           >
                             ×
                           </button>

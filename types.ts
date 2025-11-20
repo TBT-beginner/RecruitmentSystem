@@ -62,3 +62,10 @@ export interface StudentProfile {
 }
 
 export type TabType = 'list' | 'form' | 'dashboard' | 'master';
+
+export interface GoogleUser {
+  email: string;
+  name: string;
+  picture: string;
+  hd?: string; // Hosted Domain (e.g. kiryo.ac.jp)
+}
