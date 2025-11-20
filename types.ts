@@ -51,12 +51,12 @@ export interface StudentProfile {
   studentFurigana: string;
   gender: Gender;
   clubAchievements: string; // 部活動実績（ポジションや成績）
-  scoreInfo: string; // 旧:学業成績。目的を隠蔽するため汎用的な名称に変更
+  scoreInfo: string; 
   scholarshipRank: ScholarshipRank;
   recruiterType: RecruiterType; // 校長/教頭
   callDatePrincipal?: string; // 校長/教頭から電話した日付
   callDateAdvisor?: string; // 顧問から電話した日付
-  visitDate?: string; // 訪問日 または×
+  visitDate?: string; // 訪問日
   prospect: ProspectLevel;
   result: RecruitmentResult;
   notes?: string;
