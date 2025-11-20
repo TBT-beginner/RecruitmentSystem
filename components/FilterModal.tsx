@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { SchoolData } from '../types';
 import { X, Check, Filter, RotateCcw } from 'lucide-react';
@@ -68,6 +69,54 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
   // --- Handlers ---
 
+  // Municipality toggle with cascading effect to Schools
+  const handleMunicipalityToggle = (muni: string) => {
+    setLocalFilters(prev => {
+      const isSelected = prev.municipalities.includes(muni);
+      let newMunis: string[];
+      let newSchools = [...prev.schoolNames];
+
+      // Find all schools in this municipality
+      const schoolsInMuni = schools.filter(s => s.municipality === muni).map(s => s.name);
+
+      if (isSelected) {
+        // Was selected -> Unselect: remove muni and remove all its schools
+        newMunis = prev.municipalities.filter(m => m !== muni);
+        newSchools = newSchools.filter(sName => !schoolsInMuni.includes(sName));
+      } else {
+        // Was unselected -> Select: add muni and add all its schools
+        newMunis = [...prev.municipalities, muni];
+        // Add schools ensuring no duplicates
+        schoolsInMuni.forEach(sName => {
+            if (!newSchools.includes(sName)) {
+                newSchools.push(sName);
+            }
+        });
+      }
+
+      return { ...prev, municipalities: newMunis, schoolNames: newSchools };
+    });
+  };
+
+  // Toggle all municipalities with cascading effect
+  const handleMunicipalityToggleAll = () => {
+    setLocalFilters(prev => {
+      const allMunis = sortedMunicipalities;
+      const isAllSelected = allMunis.every(m => prev.municipalities.includes(m));
+      
+      if (isAllSelected) {
+        // Deselect All Munis -> Deselect All Schools (simplest approach: clear school filter)
+        // NOTE: This clears schools even if they were manually selected, which is usually expected behavior for "Clear All"
+        return { ...prev, municipalities: [], schoolNames: [] }; 
+      } else {
+        // Select All Munis -> Select All Schools
+        const allSchoolNames = schools.map(s => s.name);
+        return { ...prev, municipalities: allMunis, schoolNames: allSchoolNames };
+      }
+    });
+  };
+
+  // Generic Toggle for other categories
   const toggleFilter = (category: keyof FilterState, value: string) => {
     setLocalFilters(prev => {
       const list = prev[category];
@@ -82,13 +131,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const toggleAll = (category: keyof FilterState, allValues: string[]) => {
     setLocalFilters(prev => {
       const currentList = prev[category];
-      // If all currently selected, deselect all. Otherwise select all.
       const isAllSelected = allValues.every(v => currentList.includes(v));
       
       if (isAllSelected) {
         return { ...prev, [category]: [] };
       } else {
-        // Select all provided values (merge with existing just in case, though usually we replace)
         return { ...prev, [category]: allValues };
       }
     });
@@ -113,14 +160,14 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-4 md:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl shrink-0">
           <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
             <Filter size={24} className="text-blue-600" />
             絞り込み条件設定
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-2">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-200 transition-colors">
             <X size={28} />
           </button>
         </div>
@@ -144,8 +191,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
             title="自治体 (学校コード順)" 
             items={sortedMunicipalities} 
             selected={localFilters.municipalities} 
-            onToggle={(val) => toggleFilter('municipalities', val)}
-            onToggleAll={() => toggleAll('municipalities', sortedMunicipalities)}
+            onToggle={handleMunicipalityToggle}
+            onToggleAll={handleMunicipalityToggleAll}
           />
 
           {/* Schools */}
@@ -218,7 +265,6 @@ const FilterSection: React.FC<{
   cols?: number;
 }> = ({ title, items, selected, onToggle, onToggleAll, cols = 4 }) => {
   const isAllSelected = items.length > 0 && items.every(i => selected.includes(i));
-  const isPartialSelected = items.some(i => selected.includes(i)) && !isAllSelected;
 
   return (
     <div className="space-y-3">
@@ -226,7 +272,7 @@ const FilterSection: React.FC<{
         <h4 className="font-bold text-slate-700 text-lg">{title}</h4>
         <button 
           onClick={onToggleAll}
-          className="text-sm text-blue-600 hover:bg-blue-50 px-2 py-1 rounded font-medium"
+          className="text-sm text-blue-600 hover:bg-blue-50 px-3 py-1 rounded font-medium transition-colors"
         >
           {isAllSelected ? '全解除' : '全選択'}
         </button>
@@ -235,24 +281,25 @@ const FilterSection: React.FC<{
         {items.map(item => {
            const isSelected = selected.includes(item);
            return (
-            <label 
+            <div 
               key={item} 
+              onClick={() => onToggle(item)}
               className={`
-                flex items-center gap-2 p-2 rounded cursor-pointer border transition-all select-none
-                ${isSelected ? 'bg-blue-50 border-blue-300 text-blue-800' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}
+                flex items-center gap-2 p-2 rounded-lg cursor-pointer border transition-all select-none
+                ${isSelected ? 'bg-blue-50 border-blue-300 text-blue-800 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}
               `}
             >
               <div className={`
-                w-5 h-5 rounded border flex items-center justify-center flex-shrink-0
+                w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 transition-colors
                 ${isSelected ? 'bg-blue-500 border-blue-500' : 'bg-white border-slate-300'}
               `}>
                 {isSelected && <Check size={14} className="text-white" />}
               </div>
-              <span className="text-sm truncate" title={item}>{item}</span>
-            </label>
+              <span className="text-sm truncate font-medium" title={item}>{item}</span>
+            </div>
            );
         })}
-        {items.length === 0 && <div className="text-slate-400 text-sm col-span-full">項目がありません</div>}
+        {items.length === 0 && <div className="text-slate-400 text-sm col-span-full py-2">項目がありません</div>}
       </div>
     </div>
   );
