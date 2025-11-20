@@ -78,10 +78,17 @@ export class SheetService {
     });
     const clubsData = await clubsResp.json();
 
+    // Fetch Recruiters (New)
+    const recruitersResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Recruiters!A2:A?valueRenderOption=FORMATTED_VALUE`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const recruitersData = await recruitersResp.json();
+
     return {
         students: this.mapRowsToStudents(studentsData.values || []),
         schools: this.mapRowsToSchools(schoolsData.values || []),
-        clubs: (clubsData.values || []).map((row: any[]) => row[0]).filter((c: any) => c)
+        clubs: (clubsData.values || []).map((row: any[]) => row[0]).filter((c: any) => c),
+        recruiters: (recruitersData.values || []).map((row: any[]) => row[0]).filter((r: any) => r)
     };
   }
 
@@ -95,18 +102,11 @@ export class SheetService {
   }
 
   public async updateStudent(spreadsheetId: string, accessToken: string, student: StudentProfile, allStudents: StudentProfile[]) {
-    // Find row index (1-based). Header is row 1. Data starts row 2.
-    // We assume the list passed matches the sheet order mostly, but safest is to search by ID.
-    // However, Sheet API doesn't search. We rely on the initial load order or matching ID.
-    // For robust update, we really need the row number. 
-    // A simple strategy: Load all IDs, find index, update that range.
-    
     const idResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Students!A:A`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     });
     const idData = await idResp.json();
     const rows = idData.values || [];
-    // rows[0] is 'id' (header)
     
     const rowIndex = rows.findIndex((r: string[]) => r[0] === student.id);
     
@@ -114,7 +114,7 @@ export class SheetService {
         throw new Error("Student ID not found in Sheet");
     }
 
-    const sheetRowNumber = rowIndex + 1; // 1-based index for API
+    const sheetRowNumber = rowIndex + 1; 
     const rowData = this.mapStudentToRow(student);
 
     await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Students!A${sheetRowNumber}:V${sheetRowNumber}?valueInputOption=USER_ENTERED`, {
@@ -125,9 +125,6 @@ export class SheetService {
   }
   
   public async deleteStudent(spreadsheetId: string, accessToken: string, studentId: string) {
-    // "Deleting" in basic Sheets API usage without batchUpdate(deleteDimension) usually implies clearing the row
-    // To properly delete rows, we need `batchUpdate`.
-    
     const idResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Students!A:A`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -135,13 +132,8 @@ export class SheetService {
     const rows = idData.values || [];
     const rowIndex = rows.findIndex((r: string[]) => r[0] === studentId);
     
-    if (rowIndex === -1) return; // Already gone?
+    if (rowIndex === -1) return;
 
-    // Use batchUpdate to delete dimension
-    // We need the sheetId (integer) for "Students" sheet. This is tricky if we don't fetch sheet metadata.
-    // Fallback: Clear the content of the row (soft delete behavior visually, but keeps empty row)
-    // OR: We fetch metadata first.
-    
     const metaResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -151,10 +143,6 @@ export class SheetService {
     if (!studentSheet) return;
     
     const sheetId = studentSheet.properties.sheetId;
-    
-    // Row index in array is 0-based including header.
-    // API expects startIndex inclusive, endIndex exclusive.
-    // Array index 0 is Header (Row 1). Index 1 is Data (Row 2).
     
     await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
         method: 'POST',
@@ -174,10 +162,8 @@ export class SheetService {
     });
   }
   
-  // --- Master Data Helpers ---
-  
-  public async syncMasterData(spreadsheetId: string, accessToken: string, schools: SchoolData[], clubs: string[]) {
-     // Clear and rewrite Schools (Simpler than reconciling diffs)
+  public async syncMasterData(spreadsheetId: string, accessToken: string, schools: SchoolData[], clubs: string[], recruiters: string[]) {
+     // Sync Schools
      const schoolRows = schools.map(this.mapSchoolToRow);
      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Schools!A2:F?valueInputOption=USER_ENTERED`, {
         method: 'PUT',
@@ -185,12 +171,20 @@ export class SheetService {
         body: JSON.stringify({ values: schoolRows })
     });
     
-    // Clear and rewrite Clubs
+    // Sync Clubs
     const clubRows = clubs.map(c => [c]);
     await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Clubs!A2:A?valueInputOption=USER_ENTERED`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ values: clubRows })
+    });
+
+    // Sync Recruiters
+    const recruiterRows = recruiters.map(r => [r]);
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Recruiters!A2:A?valueInputOption=USER_ENTERED`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: recruiterRows })
     });
   }
 
@@ -211,7 +205,7 @@ export class SheetService {
         studentFurigana: row[10] || '',
         gender: row[11] || '',
         clubAchievements: row[12] || '',
-        academicScore: row[13]?.toString() || '',
+        scoreInfo: row[13]?.toString() || '', // Renamed for obfuscation
         scholarshipRank: row[14] || '',
         recruiterType: row[15] || '',
         callDatePrincipal: row[16] || '',
@@ -224,10 +218,9 @@ export class SheetService {
   }
 
   private mapStudentToRow(s: StudentProfile): any[] {
-      // Order must match mapRowsToStudents
       return [
           s.id, s.no, s.municipality, s.schoolName, s.schoolCode, s.principalName, s.teacherInCharge, s.schoolPhone,
-          s.clubName, s.studentName, s.studentFurigana, s.gender, s.clubAchievements, s.academicScore, s.scholarshipRank,
+          s.clubName, s.studentName, s.studentFurigana, s.gender, s.clubAchievements, s.scoreInfo, s.scholarshipRank,
           s.recruiterType, s.callDatePrincipal, s.callDateAdvisor, s.visitDate, s.prospect, s.result, s.notes
       ];
   }

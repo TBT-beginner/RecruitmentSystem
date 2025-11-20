@@ -1,13 +1,15 @@
 
 import React, { useState, useMemo } from 'react';
 import { SchoolData } from '../types';
-import { Save, Trash2, Plus, MapPin, Search, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Dumbbell } from 'lucide-react';
+import { Save, Trash2, Plus, MapPin, Search, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Dumbbell, Users } from 'lucide-react';
 
 interface MasterDataProps {
   schools: SchoolData[];
-  setSchools: (schools: SchoolData[]) => void; // Changed from React.Dispatch
+  setSchools: (schools: SchoolData[]) => void;
   clubs: string[];
-  setClubs: (clubs: string[]) => void; // Changed from React.Dispatch
+  setClubs: (clubs: string[]) => void;
+  recruiters: string[];
+  setRecruiters: (recruiters: string[]) => void;
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -17,7 +19,7 @@ interface SortConfig {
   direction: SortDirection;
 }
 
-type MasterTab = 'school' | 'club';
+type MasterTab = 'school' | 'club' | 'recruiter';
 
 // Helper function to generate next school code
 const getNextSchoolCode = (currentSchools: SchoolData[]): string => {
@@ -28,7 +30,7 @@ const getNextSchoolCode = (currentSchools: SchoolData[]): string => {
   return (maxId + 1).toString();
 };
 
-const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, setClubs }) => {
+const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, setClubs, recruiters, setRecruiters }) => {
   const [activeTab, setActiveTab] = useState<MasterTab>('school');
   const [searchQuery, setSearchQuery] = useState('');
   const [municipalityFilter, setMunicipalityFilter] = useState('');
@@ -38,6 +40,9 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
   
   // Club Entry State
   const [newClub, setNewClub] = useState('');
+
+  // Recruiter Entry State
+  const [newRecruiter, setNewRecruiter] = useState('');
 
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   
@@ -49,6 +54,10 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
   // Edit state (Club)
   const [editingClubIndex, setEditingClubIndex] = useState<number | null>(null);
   const [editClubValue, setEditClubValue] = useState('');
+
+  // Edit state (Recruiter)
+  const [editingRecruiterIndex, setEditingRecruiterIndex] = useState<number | null>(null);
+  const [editRecruiterValue, setEditRecruiterValue] = useState('');
 
   // Get unique municipalities for filter/add
   const municipalities = useMemo(() => 
@@ -149,6 +158,42 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
     setEditingClubIndex(null);
   };
 
+  // --- Recruiter Handlers ---
+  const handleAddRecruiter = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRecruiter.trim()) return;
+    if (recruiters.includes(newRecruiter.trim())) {
+        alert('この担当者は既に登録されています。');
+        return;
+    }
+    setRecruiters([...recruiters, newRecruiter.trim()]);
+    setNewRecruiter('');
+  };
+
+  const handleDeleteRecruiter = (recruiterName: string) => {
+    if (window.confirm(`「${recruiterName}」を削除しますか？`)) {
+        setRecruiters(recruiters.filter(r => r !== recruiterName));
+    }
+  };
+
+  const startEditingRecruiter = (index: number, name: string) => {
+    setEditingRecruiterIndex(index);
+    setEditRecruiterValue(name);
+  };
+
+  const saveEditRecruiter = () => {
+    if (editingRecruiterIndex !== null) {
+        const updated = [...recruiters];
+        updated[editingRecruiterIndex] = editRecruiterValue;
+        setRecruiters(updated);
+        setEditingRecruiterIndex(null);
+    }
+  };
+
+  const cancelEditRecruiter = () => {
+    setEditingRecruiterIndex(null);
+  };
+
 
   // --- School Processing ---
   const processedSchools = useMemo(() => {
@@ -215,10 +260,24 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
                 </div>
                  {activeTab === 'club' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600"></div>}
             </button>
+            <button 
+                onClick={() => setActiveTab('recruiter')}
+                className={`pb-4 px-4 text-lg font-medium transition-colors relative whitespace-nowrap ${
+                    activeTab === 'recruiter' 
+                    ? 'text-blue-600' 
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+            >
+                <div className="flex items-center gap-2">
+                    <Users size={24} />
+                    担当者マスタ
+                </div>
+                 {activeTab === 'recruiter' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600"></div>}
+            </button>
         </div>
 
       <div className="flex-1 overflow-y-auto md:overflow-hidden p-4 md:p-8 flex flex-col gap-6 md:gap-8">
-      {activeTab === 'school' ? (
+      {activeTab === 'school' && (
         <>
             {/* Add School Form */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
@@ -397,7 +456,9 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
                  </div>
             </div>
         </>
-      ) : (
+      )}
+
+      {activeTab === 'club' && (
         <>
             {/* Add Club Form */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
@@ -467,6 +528,94 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, setSchools, clubs, set
                                     <td className="px-8 py-5 text-right">
                                          <button 
                                             onClick={() => handleDeleteClub(club)}
+                                            className="text-slate-300 hover:text-red-600 hover:bg-red-50 transition-colors p-2 rounded-full"
+                                            title="削除"
+                                            >
+                                            <Trash2 size={20} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                 <div className="p-3 border-t border-slate-200 bg-slate-50 text-sm text-slate-500 text-center">
+                    リストの項目をダブルクリックすると編集できます
+                 </div>
+             </div>
+        </>
+      )}
+
+      {activeTab === 'recruiter' && (
+        <>
+             {/* Add Recruiter Form */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
+                <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-3">
+                <Plus size={24} className="text-blue-600" />
+                担当者マスタ新規追加
+                </h2>
+                <form onSubmit={handleAddRecruiter} className="flex flex-col md:flex-row gap-4 md:gap-6 md:items-end">
+                <div className="flex-1 max-w-md">
+                    <label className="block text-base font-medium text-slate-700 mb-2">担当者名</label>
+                    <input 
+                    type="text" 
+                    value={newRecruiter}
+                    onChange={e => setNewRecruiter(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg p-3 text-lg"
+                    placeholder="例: 〇〇教頭"
+                    required
+                    />
+                </div>
+                <button type="submit" className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-3 font-medium shadow-sm text-lg w-full md:w-auto">
+                    <Save size={24} />
+                    追加
+                </button>
+                </form>
+            </div>
+
+            {/* Recruiter List */}
+             <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden min-h-[400px]">
+                <div className="p-6 border-b border-slate-200 bg-slate-50">
+                     <h3 className="font-bold text-slate-700 flex items-center gap-3 text-lg">
+                        登録済み担当者一覧 ({recruiters.length}名)
+                    </h3>
+                </div>
+                <div className="overflow-auto flex-1">
+                    <table className="min-w-full text-base text-left text-slate-600">
+                        <thead className="text-sm text-slate-700 uppercase bg-slate-100 sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th className="px-8 py-4 w-24">No.</th>
+                                <th className="px-8 py-4">担当者名</th>
+                                <th className="px-8 py-4 text-right w-36">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 bg-white">
+                            {recruiters.map((recruiter, index) => (
+                                <tr key={index} className="hover:bg-slate-50 transition-colors group">
+                                    <td className="px-8 py-5 text-slate-400 font-mono text-sm">{index + 1}</td>
+                                    <td 
+                                        className="px-8 py-5 font-medium text-slate-800 cursor-text relative"
+                                        onDoubleClick={() => startEditingRecruiter(index, recruiter)}
+                                        title="ダブルクリックで編集"
+                                    >
+                                         {editingRecruiterIndex === index ? (
+                                            <input
+                                            autoFocus
+                                            type="text"
+                                            value={editRecruiterValue}
+                                            onChange={e => setEditRecruiterValue(e.target.value)}
+                                            onBlur={saveEditRecruiter}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') saveEditRecruiter();
+                                                if (e.key === 'Escape') cancelEditRecruiter();
+                                            }}
+                                            className="absolute inset-0 w-full h-full px-7 py-4 border-2 border-blue-400 focus:outline-none bg-white shadow-lg z-20 rounded-none text-lg"
+                                            />
+                                        ) : recruiter}
+                                    </td>
+                                    <td className="px-8 py-5 text-right">
+                                         <button 
+                                            onClick={() => handleDeleteRecruiter(recruiter)}
                                             className="text-slate-300 hover:text-red-600 hover:bg-red-50 transition-colors p-2 rounded-full"
                                             title="削除"
                                             >

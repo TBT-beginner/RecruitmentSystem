@@ -25,7 +25,8 @@ export enum Gender {
   FEMALE = '女',
 }
 
-export type RecruiterType = '校長' | '萩谷教頭' | '越川教頭' | 'その他';
+// スプレッドシートで管理するため、固定のUnion型からstringに変更
+export type RecruiterType = string;
 
 export interface SchoolData {
   code: string;
@@ -50,7 +51,7 @@ export interface StudentProfile {
   studentFurigana: string;
   gender: Gender;
   clubAchievements: string; // 部活動実績（ポジションや成績）
-  academicScore: string; // 学業成績 ※直近の校内テスト
+  scoreInfo: string; // 旧:学業成績。目的を隠蔽するため汎用的な名称に変更
   scholarshipRank: ScholarshipRank;
   recruiterType: RecruiterType; // 校長/教頭
   callDatePrincipal?: string; // 校長/教頭から電話した日付

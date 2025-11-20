@@ -349,7 +349,7 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
                       {student.scholarshipRank}
                     </span>
                   </div>
-                  <div className="text-xs text-slate-600">{student.academicScore || '-'}</div>
+                  <div className="text-xs text-slate-600">{student.scoreInfo || '-'}</div>
                 </td>
                 
                 {/* Inline Editable: Principal Call Date */}
@@ -560,8 +560,8 @@ const StudentList: React.FC<StudentListProps> = ({ students, onEdit, onDelete, o
                          <span className="font-bold text-orange-600">{selectedStudent.scholarshipRank}</span>
                       </div>
                        <div className="flex justify-between">
-                         <span className="text-slate-500">学業成績</span>
-                         <span className="font-medium">{selectedStudent.academicScore || '-'}</span>
+                         <span className="text-slate-500">参考情報</span>
+                         <span className="font-medium">{selectedStudent.scoreInfo || '-'}</span>
                       </div>
                     </div>
                   </div>

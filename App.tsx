@@ -9,7 +9,7 @@ import Login from './components/Login';
 import { sheetService } from './services/sheetService';
 import { LayoutDashboard, List, UserPlus, GraduationCap, Settings, Menu, ChevronLeft, LogOut, Loader2 } from 'lucide-react';
 
-// Spreadsheet ID hardcoded here
+// Spreadsheet ID
 const SPREADSHEET_ID = '1Xfq3GPnLGzFM2z4vG3eDStlUKSHpWQJqMneeDRgrzDY';
 
 const App: React.FC = () => {
@@ -21,9 +21,10 @@ const App: React.FC = () => {
 
   // App Data State
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
-  const [students, setStudents] = useState<StudentProfile[]>([]); // Start empty, fetch on load
+  const [students, setStudents] = useState<StudentProfile[]>([]);
   const [schools, setSchools] = useState<SchoolData[]>([]);
   const [clubs, setClubs] = useState<string[]>([]);
+  const [recruiters, setRecruiters] = useState<string[]>([]);
   
   const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -66,11 +67,12 @@ const App: React.FC = () => {
             setStudents(data.students);
             setSchools(data.schools);
             setClubs(data.clubs);
+            setRecruiters(data.recruiters);
         } catch (e: any) {
             console.error(e);
             let errorMsg = "データの取得に失敗しました。";
             if (e.message && e.message.includes('400')) {
-                errorMsg += "スプレッドシートに「Students」「Schools」「Clubs」シートが存在するか確認してください。";
+                errorMsg += "スプレッドシートに「Students」「Schools」「Clubs」「Recruiters」シートが存在するか確認してください。";
             } else if (e.message && e.message.includes('403')) {
                 errorMsg += "スプレッドシートへのアクセス権限がありません。";
             }
@@ -96,7 +98,7 @@ const App: React.FC = () => {
   // Recruitment Target State
   const [recruitmentTarget, setRecruitmentTarget] = useState<number>(30);
 
-  // Calculate next ID for new entries (Fallback logic if needed)
+  // Calculate next ID for new entries
   const nextNo = students.length > 0 ? Math.max(...students.map(s => s.no)) + 1 : 1;
 
   const handleNavClick = (tab: TabType) => {
@@ -175,14 +177,21 @@ const App: React.FC = () => {
   const handleSchoolsUpdate = async (newSchools: SchoolData[]) => {
       setSchools(newSchools);
       if (accessToken) {
-          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, newSchools, clubs);
+          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, newSchools, clubs, recruiters);
       }
   };
 
   const handleClubsUpdate = async (newClubs: string[]) => {
       setClubs(newClubs);
        if (accessToken) {
-          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, schools, newClubs);
+          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, schools, newClubs, recruiters);
+      }
+  };
+
+  const handleRecruitersUpdate = async (newRecruiters: string[]) => {
+      setRecruiters(newRecruiters);
+      if (accessToken) {
+          await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, schools, clubs, newRecruiters);
       }
   };
 
@@ -190,7 +199,7 @@ const App: React.FC = () => {
     const updatedSchools = [...schools, newSchool];
     setSchools(updatedSchools);
      if (accessToken) {
-        await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, updatedSchools, clubs);
+        await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, updatedSchools, clubs, recruiters);
     }
   };
 
@@ -370,6 +379,8 @@ const App: React.FC = () => {
               setSchools={handleSchoolsUpdate}
               clubs={clubs}
               setClubs={handleClubsUpdate}
+              recruiters={recruiters}
+              setRecruiters={handleRecruitersUpdate}
             />
           )}
 
@@ -383,6 +394,7 @@ const App: React.FC = () => {
                 nextId={nextNo}
                 schools={schools}
                 clubs={clubs}
+                recruiters={recruiters}
                 onAddSchool={handleDirectAddSchool}
               />
             </div>

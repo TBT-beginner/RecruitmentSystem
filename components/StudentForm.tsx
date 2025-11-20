@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { StudentProfile, Gender, ScholarshipRank, ProspectLevel, RecruitmentResult, SchoolData, RecruiterType } from '../types';
-import { RECRUITERS } from '../constants';
 import { Save, X, Plus, School, Trash2, Calendar, XCircle, ChevronLeft } from 'lucide-react';
 
 interface StudentFormProps {
@@ -12,10 +11,11 @@ interface StudentFormProps {
   nextId: number;
   schools: SchoolData[];
   clubs: string[];
+  recruiters: string[];
   onAddSchool: (school: SchoolData) => void;
 }
 
-const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDelete, onCancel, nextId, schools, clubs, onAddSchool }) => {
+const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDelete, onCancel, nextId, schools, clubs, recruiters, onAddSchool }) => {
   // Extract unique municipalities from schools list
   const municipalities = useMemo(() => Array.from(new Set(schools.map(s => s.municipality))).sort(), [schools]);
 
@@ -33,9 +33,9 @@ const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDele
     studentFurigana: '',
     gender: '' as Gender,
     clubAchievements: '',
-    academicScore: '',
+    scoreInfo: '', // Renamed from academicScore
     scholarshipRank: '' as ScholarshipRank,
-    recruiterType: '校長',
+    recruiterType: recruiters[0] || '',
     callDatePrincipal: '',
     callDateAdvisor: '',
     visitDate: '',
@@ -55,8 +55,10 @@ const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDele
   useEffect(() => {
     if (initialData) {
       setFormData(initialData);
+    } else if (recruiters.length > 0 && !formData.recruiterType) {
+      setFormData(prev => ({ ...prev, recruiterType: recruiters[0] }));
     }
-  }, [initialData]);
+  }, [initialData, recruiters]);
 
   // Filter schools based on municipality
   const availableSchools = schools.filter(s => s.municipality === formData.municipality);
@@ -104,8 +106,6 @@ const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDele
   };
   
   const handleDelete = () => {
-    // Confirmation is handled in App.tsx logic passed via onDelete usually, but good to have double check or relying on passed prop.
-    // We will trigger the passed onDelete which likely has logic, but if we want inline confirm:
     if (onDelete && formData.id) {
         onDelete(formData.id);
     }
@@ -224,8 +224,15 @@ const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDele
               <input type="text" name="clubAchievements" value={formData.clubAchievements} onChange={handleChange} className="w-full border-slate-300 rounded-lg shadow-sm p-3 text-lg border focus:ring-blue-500 focus:border-blue-500" placeholder="例: 県大会ベスト4、ピッチャー" />
             </div>
              <div className="md:col-span-3">
-              <label className="block text-lg font-medium text-slate-700 mb-2">学業成績 ※直近の校内テスト</label>
-              <input type="text" name="academicScore" value={formData.academicScore} onChange={handleChange} className="w-full border-slate-300 rounded-lg shadow-sm p-3 text-lg border focus:ring-blue-500 focus:border-blue-500" placeholder="例: 5教科 320点" />
+              <label className="block text-lg font-medium text-slate-700 mb-2">参考情報 (数値等)</label>
+              <input 
+                type="text" 
+                name="scoreInfo" 
+                value={formData.scoreInfo} 
+                onChange={handleChange} 
+                className="w-full border-slate-300 rounded-lg shadow-sm p-3 text-lg border focus:ring-blue-500 focus:border-blue-500" 
+                placeholder="入力してください" 
+              />
             </div>
           </div>
         </div>
@@ -362,7 +369,11 @@ const StudentForm: React.FC<StudentFormProps> = ({ initialData, onSubmit, onDele
              <div>
               <label className="block text-lg font-medium text-slate-700 mb-2">担当者</label>
               <select name="recruiterType" value={formData.recruiterType} onChange={handleChange} className="w-full border-slate-300 rounded-lg shadow-sm p-3 text-lg border bg-white focus:ring-orange-500">
-                {RECRUITERS.map(r => <option key={r} value={r}>{r}</option>)}
+                {recruiters.length > 0 ? (
+                    recruiters.map(r => <option key={r} value={r}>{r}</option>)
+                ) : (
+                    <option value="">リストが空です</option>
+                )}
               </select>
             </div>
              <div className="md:col-span-2">
