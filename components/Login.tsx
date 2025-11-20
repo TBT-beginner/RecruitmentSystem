@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { GraduationCap, AlertCircle, ExternalLink } from 'lucide-react';
+import { GraduationCap, AlertCircle } from 'lucide-react';
 
 interface LoginProps {
   onLogin: () => void;
@@ -14,7 +14,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, spreadsheetId, setSpreadsheetId,
 
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSpreadsheetId(e.target.value);
-    localStorage.setItem('spreadsheetId', e.target.value);
+    // Safe LocalStorage access
+    try {
+        localStorage.setItem('spreadsheetId', e.target.value);
+    } catch (e) {
+        // ignore
+    }
   };
 
   return (

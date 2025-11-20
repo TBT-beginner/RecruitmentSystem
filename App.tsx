@@ -10,11 +10,19 @@ import Login from './components/Login';
 import { sheetService } from './services/sheetService';
 import { LayoutDashboard, List, UserPlus, GraduationCap, Settings, Menu, ChevronLeft, LogOut, Loader2 } from 'lucide-react';
 
+const DEFAULT_SPREADSHEET_ID = '1Xfq3GPnLGzFM2z4vG3eDStlUKSHpWQJqMneeDRgrzDY';
+
 const App: React.FC = () => {
   // Auth State
   const [user, setUser] = useState<GoogleUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [spreadsheetId, setSpreadsheetId] = useState<string>(() => localStorage.getItem('spreadsheetId') || '');
+  const [spreadsheetId, setSpreadsheetId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('spreadsheetId') || DEFAULT_SPREADSHEET_ID;
+    } catch (e) {
+      return DEFAULT_SPREADSHEET_ID;
+    }
+  });
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,6 +45,8 @@ const App: React.FC = () => {
       }
     };
     handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Handle Login Logic
@@ -48,6 +58,13 @@ const App: React.FC = () => {
     }
 
     try {
+        // Save ID properly
+        try {
+          localStorage.setItem('spreadsheetId', spreadsheetId);
+        } catch (e) {
+          console.warn('LocalStorage access denied');
+        }
+
         const token = await sheetService.login();
         const userInfo = await sheetService.getUserInfo(token);
         
@@ -67,9 +84,15 @@ const App: React.FC = () => {
             setStudents(data.students);
             setSchools(data.schools.length > 0 ? data.schools : INITIAL_SCHOOL_DATABASE);
             setClubs(data.clubs.length > 0 ? data.clubs : INITIAL_CLUBS);
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            setLoginError("データの取得に失敗しました。スプレッドシートIDやシート構成を確認してください。");
+            let errorMsg = "データの取得に失敗しました。";
+            if (e.message && e.message.includes('400')) {
+                errorMsg += "スプレッドシートに「Students」「Schools」「Clubs」シートが存在するか確認してください。";
+            } else if (e.message && e.message.includes('403')) {
+                errorMsg += "スプレッドシートへのアクセス権限がありません。";
+            }
+            setLoginError(errorMsg);
             setAccessToken(null);
             setUser(null);
         } finally {
@@ -78,7 +101,7 @@ const App: React.FC = () => {
 
     } catch (error: any) {
         console.error(error);
-        setLoginError("ログインに失敗しました。" + (error.message || ""));
+        setLoginError("ログインに失敗しました。" + (error.message || "ポップアップがブロックされていないか確認してください。"));
     }
   };
 
@@ -102,10 +125,18 @@ const App: React.FC = () => {
     }
   };
 
+  // Helper to generate ID safely
+  const generateId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
+  };
+
   // CRUD Operations with API
   const handleAddStudent = async (newStudent: StudentProfile) => {
     if (!accessToken) return;
-    const studentWithId = { ...newStudent, id: crypto.randomUUID() };
+    const studentWithId = { ...newStudent, id: generateId() };
     
     // Optimistic Update
     setStudents(prev => [...prev, studentWithId]);
