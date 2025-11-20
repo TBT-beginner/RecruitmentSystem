@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { INITIAL_STUDENTS, INITIAL_SCHOOL_DATABASE, CLUBS as INITIAL_CLUBS } from './constants';
 import { StudentProfile, TabType, SchoolData, GoogleUser } from './types';
 import StudentForm from './components/StudentForm';
 import StudentList from './components/StudentList';
@@ -65,8 +64,8 @@ const App: React.FC = () => {
         try {
             const data = await sheetService.fetchAllData(SPREADSHEET_ID, token);
             setStudents(data.students);
-            setSchools(data.schools.length > 0 ? data.schools : INITIAL_SCHOOL_DATABASE);
-            setClubs(data.clubs.length > 0 ? data.clubs : INITIAL_CLUBS);
+            setSchools(data.schools);
+            setClubs(data.clubs);
         } catch (e: any) {
             console.error(e);
             let errorMsg = "データの取得に失敗しました。";

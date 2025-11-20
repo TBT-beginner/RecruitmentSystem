@@ -61,19 +61,19 @@ export class SheetService {
 
   public async fetchAllData(spreadsheetId: string, accessToken: string) {
     // Fetch Students
-    const studentsResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Students!A2:V?valueRenderOption=UNFORMATTED_VALUE`, {
+    const studentsResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Students!A2:V?valueRenderOption=FORMATTED_VALUE`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     });
     const studentsData = await studentsResp.json();
     
     // Fetch Schools
-    const schoolsResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Schools!A2:F?valueRenderOption=UNFORMATTED_VALUE`, {
+    const schoolsResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Schools!A2:F?valueRenderOption=FORMATTED_VALUE`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     });
     const schoolsData = await schoolsResp.json();
 
     // Fetch Clubs
-    const clubsResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Clubs!A2:A?valueRenderOption=UNFORMATTED_VALUE`, {
+    const clubsResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Clubs!A2:A?valueRenderOption=FORMATTED_VALUE`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     });
     const clubsData = await clubsResp.json();
