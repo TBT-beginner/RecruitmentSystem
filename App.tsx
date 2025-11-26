@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { StudentProfile, TabType, SchoolData, GoogleUser, ConfigData } from './types';
 import StudentForm from './components/StudentForm';
@@ -344,7 +345,7 @@ const App: React.FC = () => {
       <main className="flex-1 flex flex-col overflow-hidden relative w-full min-w-0">
         {/* Header Bar */}
         <header className="h-16 md:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shadow-sm z-10 shrink-0">
-          <div className="flex items-center gap-3 md:gap-4 min-w-0">
+          <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 md:flex-none">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
@@ -352,14 +353,14 @@ const App: React.FC = () => {
             >
               {isSidebarOpen ? <ChevronLeft className="w-6 h-6 md:w-7 md:h-7" /> : <Menu className="w-6 h-6 md:w-7 md:h-7" />}
             </button>
-            <h2 className="text-lg md:text-2xl font-bold text-slate-800 truncate">
+            <h2 className="text-lg md:text-2xl font-bold text-slate-800 truncate min-w-0 flex-1 md:flex-none">
               {activeTab === 'dashboard' && '勧誘状況サマリー'}
               {activeTab === 'list' && '勧誘対象生徒一覧'}
               {activeTab === 'master' && 'マスタデータ管理'}
               {activeTab === 'form' && (editingStudent ? '生徒情報編集' : '新規生徒登録')}
             </h2>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-shrink-0 ml-2">
              <button
                 onClick={handleManualRefresh}
                 className={`flex items-center gap-2 px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors font-medium ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}

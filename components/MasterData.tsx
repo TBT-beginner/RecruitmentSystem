@@ -253,7 +253,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
   return (
     <div className="h-full flex flex-col">
         {/* Tabs */}
-        <div className="flex border-b border-slate-200 bg-white px-4 md:px-8 pt-6 gap-4 md:gap-6 overflow-x-auto shrink-0">
+        <div className="flex border-b border-slate-200 bg-white px-4 md:px-8 pt-6 gap-4 md:gap-6 overflow-x-auto shrink-0 z-10 sticky top-0">
             <button 
                 onClick={() => setActiveTab('school')}
                 className={`pb-4 px-4 text-lg font-medium transition-colors relative whitespace-nowrap ${
@@ -523,7 +523,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
 
             {/* Club List */}
              <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-col overflow-visible">
-                <div className="p-6 border-b border-slate-200 bg-slate-50">
+                <div className="p-6 border-b border-slate-200 bg-slate-50 sticky top-0 z-20">
                      <h3 className="font-bold text-slate-700 flex items-center gap-3 text-lg">
                         登録済み部活動一覧 ({clubs.length}部)
                     </h3>
@@ -611,7 +611,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
 
             {/* Recruiter List */}
              <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-col overflow-visible">
-                <div className="p-6 border-b border-slate-200 bg-slate-50">
+                <div className="p-6 border-b border-slate-200 bg-slate-50 sticky top-0 z-20">
                      <h3 className="font-bold text-slate-700 flex items-center gap-3 text-lg">
                         登録済み担当者一覧 ({recruiters.length}名)
                     </h3>
