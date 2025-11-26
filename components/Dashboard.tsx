@@ -231,9 +231,11 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-        <div className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-slate-200 h-96 md:h-[30rem] flex flex-col min-w-0">
+      {/* Charts Layout - Revised for PC Optimization */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        
+        {/* 1. Prospect Pie Chart */}
+        <div className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-slate-200 h-96 flex flex-col min-w-0">
           <h3 className="text-lg font-bold text-slate-700 mb-4 uppercase tracking-wide flex-shrink-0">見込み度合い分布</h3>
           <div className="flex-1 min-h-0 w-full">
             <ResponsiveContainer width="99%" height="100%">
@@ -260,7 +262,8 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        <div className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-slate-200 h-96 md:h-[30rem] flex flex-col min-w-0">
+        {/* 2. Funnel Chart */}
+        <div className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-slate-200 h-96 flex flex-col min-w-0">
            <h3 className="text-lg font-bold text-slate-700 mb-4 uppercase tracking-wide flex-shrink-0">勧誘ファネル</h3>
            <div className="flex-1 min-h-0 w-full">
              <ResponsiveContainer width="99%" height="100%">
@@ -274,10 +277,26 @@ const Dashboard: React.FC<DashboardProps> = ({
              </ResponsiveContainer>
            </div>
         </div>
+
+         {/* 3. Rank Chart */}
+         <div className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-slate-200 h-96 flex flex-col min-w-0">
+           <h3 className="text-lg font-bold text-slate-700 mb-4 uppercase tracking-wide flex-shrink-0">奨学生ランク分布</h3>
+           <div className="flex-1 min-h-0 w-full">
+             <ResponsiveContainer width="99%" height="100%">
+               <BarChart data={rankData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+               </BarChart>
+             </ResponsiveContainer>
+           </div>
+        </div>
       </div>
 
-       {/* Charts Row 2 */}
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mb-8">
+       {/* Detailed Club Chart - Full Width Row */}
+       <div className="w-full mb-8">
         <div className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-slate-200 h-96 md:h-[30rem] flex flex-col min-w-0">
            <h3 className="text-lg font-bold text-slate-700 mb-4 uppercase tracking-wide flex-shrink-0">部活動別状況詳細</h3>
            <div className="flex-1 min-h-0 w-full">
@@ -291,21 +310,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <Bar dataKey="count" name="対象総数" fill="#8884d8" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="contacted" name="声掛け済み" fill="#82ca9d" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="prospect" name="見込み○" fill="#ffc658" radius={[4, 4, 0, 0]} />
-               </BarChart>
-             </ResponsiveContainer>
-           </div>
-        </div>
-
-         <div className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-slate-200 h-96 md:h-[30rem] flex flex-col min-w-0">
-           <h3 className="text-lg font-bold text-slate-700 mb-4 uppercase tracking-wide flex-shrink-0">奨学生ランク分布</h3>
-           <div className="flex-1 min-h-0 w-full">
-             <ResponsiveContainer width="99%" height="100%">
-               <BarChart data={rankData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                </BarChart>
              </ResponsiveContainer>
            </div>

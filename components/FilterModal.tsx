@@ -179,7 +179,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
         {/* Body - Scrollable */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-8">
           
-          {/* Actions (Optional) */}
+          {/* 1. Actions */}
           {actions && actions.length > 0 && (
             <FilterSection 
               title="次対応・アクション" 
@@ -190,7 +190,16 @@ const FilterModal: React.FC<FilterModalProps> = ({
             />
           )}
 
-          {/* Municipalities */}
+          {/* 2. Clubs (Moved up as requested) */}
+          <FilterSection 
+            title="部活動" 
+            items={clubs} 
+            selected={localFilters.clubNames} 
+            onToggle={(val) => toggleFilter('clubNames', val)}
+            onToggleAll={() => toggleAll('clubNames', clubs)}
+          />
+
+          {/* 3. Municipalities */}
           <FilterSection 
             title="自治体 (学校コード順)" 
             items={sortedMunicipalities} 
@@ -199,7 +208,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
             onToggleAll={handleMunicipalityToggleAll}
           />
 
-          {/* Schools */}
+          {/* 4. Schools */}
           <FilterSection 
             title="中学校 (コード順)" 
             items={sortedSchools.map(s => s.name)} 
@@ -209,16 +218,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
             cols={3}
           />
 
-          {/* Clubs */}
-          <FilterSection 
-            title="部活動" 
-            items={clubs} 
-            selected={localFilters.clubNames} 
-            onToggle={(val) => toggleFilter('clubNames', val)}
-            onToggleAll={() => toggleAll('clubNames', clubs)}
-          />
-
-          {/* Recruiters */}
+          {/* 5. Recruiters */}
           <FilterSection 
             title="担当者" 
             items={recruiters} 

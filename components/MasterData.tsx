@@ -312,7 +312,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
             </button>
         </div>
 
-      <div className="flex-1 overflow-y-auto md:overflow-hidden p-4 md:p-8 flex flex-col gap-6 md:gap-8">
+      <div className="flex-1 p-4 md:p-8 flex flex-col gap-6 md:gap-8 overflow-visible">
       {activeTab === 'school' && (
         <>
             {/* Add School Form */}
@@ -366,9 +366,9 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
             </div>
 
             {/* Table Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden min-h-[400px]">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-col overflow-visible">
                 {/* Toolbar */}
-                <div className="p-4 md:p-6 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-slate-50">
+                <div className="p-4 md:p-6 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-slate-50 sticky top-0 z-20">
                 <h3 className="font-bold text-slate-700 flex items-center gap-3 text-lg">
                     登録済み学校一覧 ({processedSchools.length}校)
                 </h3>
@@ -408,9 +408,9 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
                 </div>
                 
                 {/* Data Table */}
-                <div className="overflow-auto flex-1">
+                <div className="overflow-x-auto">
                 <table className="min-w-full text-base text-left text-slate-600 whitespace-nowrap">
-                    <thead className="text-sm text-slate-700 uppercase bg-slate-100 sticky top-0 z-10 shadow-sm">
+                    <thead className="text-sm text-slate-700 uppercase bg-slate-100">
                     <tr>
                         {[
                         { key: 'code', label: 'コード', width: 'w-24' },
@@ -522,15 +522,15 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
             </div>
 
             {/* Club List */}
-             <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden min-h-[400px]">
+             <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-col overflow-visible">
                 <div className="p-6 border-b border-slate-200 bg-slate-50">
                      <h3 className="font-bold text-slate-700 flex items-center gap-3 text-lg">
                         登録済み部活動一覧 ({clubs.length}部)
                     </h3>
                 </div>
-                <div className="overflow-auto flex-1">
+                <div className="overflow-x-auto">
                     <table className="min-w-full text-base text-left text-slate-600">
-                        <thead className="text-sm text-slate-700 uppercase bg-slate-100 sticky top-0 z-10 shadow-sm">
+                        <thead className="text-sm text-slate-700 uppercase bg-slate-100">
                             <tr>
                                 <th className="px-8 py-4 w-24">No.</th>
                                 <th className="px-8 py-4">部活動名</th>
@@ -610,15 +610,15 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
             </div>
 
             {/* Recruiter List */}
-             <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden min-h-[400px]">
+             <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-col overflow-visible">
                 <div className="p-6 border-b border-slate-200 bg-slate-50">
                      <h3 className="font-bold text-slate-700 flex items-center gap-3 text-lg">
                         登録済み担当者一覧 ({recruiters.length}名)
                     </h3>
                 </div>
-                <div className="overflow-auto flex-1">
+                <div className="overflow-x-auto">
                     <table className="min-w-full text-base text-left text-slate-600">
-                        <thead className="text-sm text-slate-700 uppercase bg-slate-100 sticky top-0 z-10 shadow-sm">
+                        <thead className="text-sm text-slate-700 uppercase bg-slate-100">
                             <tr>
                                 <th className="px-8 py-4 w-24">No.</th>
                                 <th className="px-8 py-4">担当者名</th>
@@ -671,7 +671,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
       )}
       
       {activeTab === 'config' && (
-         <div className="flex-1 overflow-y-auto">
+         <div className="flex-1 overflow-visible">
             <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-6 text-sm">
                 <strong>注意:</strong> ここでの設定はアプリケーション全体の自動判定ロジック（「完了」「見送り」判定など）に影響します。
                 特に「未定」「確約/合格」「辞退」「保留」「○」「×」といった基本キーワードを変更・削除すると、自動ステータス更新が正しく動作しなくなる場合があります。
