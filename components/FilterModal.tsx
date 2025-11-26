@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { SchoolData } from '../types';
 import { X, Check, Filter, RotateCcw } from 'lucide-react';
@@ -72,29 +71,30 @@ const FilterModal: React.FC<FilterModalProps> = ({
   // Municipality toggle with cascading effect to Schools
   const handleMunicipalityToggle = (muni: string) => {
     setLocalFilters(prev => {
-      const isSelected = prev.municipalities.includes(muni);
+      const wasSelected = prev.municipalities.includes(muni);
       let newMunis: string[];
-      let newSchools = [...prev.schoolNames];
+      let newSchools = new Set(prev.schoolNames); // Use Set for easier add/delete
 
       // Find all schools in this municipality
-      const schoolsInMuni = schools.filter(s => s.municipality === muni).map(s => s.name);
+      const schoolsInMuni = schools
+        .filter(s => s.municipality === muni)
+        .map(s => s.name);
 
-      if (isSelected) {
+      if (wasSelected) {
         // Was selected -> Unselect: remove muni and remove all its schools
         newMunis = prev.municipalities.filter(m => m !== muni);
-        newSchools = newSchools.filter(sName => !schoolsInMuni.includes(sName));
+        schoolsInMuni.forEach(sName => newSchools.delete(sName));
       } else {
         // Was unselected -> Select: add muni and add all its schools
         newMunis = [...prev.municipalities, muni];
-        // Add schools ensuring no duplicates
-        schoolsInMuni.forEach(sName => {
-            if (!newSchools.includes(sName)) {
-                newSchools.push(sName);
-            }
-        });
+        schoolsInMuni.forEach(sName => newSchools.add(sName));
       }
 
-      return { ...prev, municipalities: newMunis, schoolNames: newSchools };
+      return { 
+        ...prev, 
+        municipalities: newMunis, 
+        schoolNames: Array.from(newSchools) 
+      };
     });
   };
 
@@ -105,13 +105,15 @@ const FilterModal: React.FC<FilterModalProps> = ({
       const isAllSelected = allMunis.every(m => prev.municipalities.includes(m));
       
       if (isAllSelected) {
-        // Deselect All Munis -> Deselect All Schools (simplest approach: clear school filter)
-        // NOTE: This clears schools even if they were manually selected, which is usually expected behavior for "Clear All"
+        // Deselect All Munis -> Deselect All Schools
         return { ...prev, municipalities: [], schoolNames: [] }; 
       } else {
         // Select All Munis -> Select All Schools
-        const allSchoolNames = schools.map(s => s.name);
-        return { ...prev, municipalities: allMunis, schoolNames: allSchoolNames };
+        return { 
+            ...prev, 
+            municipalities: allMunis, 
+            schoolNames: schools.map(s => s.name) 
+        };
       }
     });
   };
@@ -120,7 +122,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const toggleFilter = (category: keyof FilterState, value: string) => {
     setLocalFilters(prev => {
       const list = prev[category];
-      if (list.includes(value)) {
+      const isSelected = list.includes(value);
+      
+      if (isSelected) {
         return { ...prev, [category]: list.filter(item => item !== value) };
       } else {
         return { ...prev, [category]: [...list, value] };
@@ -159,8 +163,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="p-4 md:p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-xl shrink-0">
           <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -246,7 +250,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
               className="px-8 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-md flex items-center gap-2"
             >
               <Check size={20} />
-              この条件で絞り込む
+              適用する
             </button>
           </div>
         </div>
@@ -266,24 +270,30 @@ const FilterSection: React.FC<{
 }> = ({ title, items, selected, onToggle, onToggleAll, cols = 4 }) => {
   const isAllSelected = items.length > 0 && items.every(i => selected.includes(i));
 
+  // Determine grid class statically
+  let gridClass = 'grid-cols-2 md:grid-cols-4';
+  if (cols === 2) gridClass = 'grid-cols-2';
+  if (cols === 3) gridClass = 'grid-cols-2 md:grid-cols-3';
+
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-end border-b border-slate-100 pb-2">
         <h4 className="font-bold text-slate-700 text-lg">{title}</h4>
         <button 
-          onClick={onToggleAll}
+          type="button"
+          onClick={(e) => { e.preventDefault(); onToggleAll(); }}
           className="text-sm text-blue-600 hover:bg-blue-50 px-3 py-1 rounded font-medium transition-colors"
         >
           {isAllSelected ? '全解除' : '全選択'}
         </button>
       </div>
-      <div className={`grid grid-cols-2 md:grid-cols-${cols} gap-2`}>
+      <div className={`grid ${gridClass} gap-2`}>
         {items.map(item => {
            const isSelected = selected.includes(item);
            return (
             <div 
               key={item} 
-              onClick={() => onToggle(item)}
+              onClick={(e) => { e.preventDefault(); onToggle(item); }}
               className={`
                 flex items-center gap-2 p-2 rounded-lg cursor-pointer border transition-all select-none
                 ${isSelected ? 'bg-blue-50 border-blue-300 text-blue-800 shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}
