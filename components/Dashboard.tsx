@@ -231,7 +231,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Charts Layout - Revised for PC Optimization */}
+      {/* Charts Layout - Revised for PC Optimization: 3 cols for top charts, full width for bottom */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         
         {/* 1. Prospect Pie Chart */}
@@ -249,7 +249,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   fill="#8884d8"
                   paddingAngle={5}
                   dataKey="count"
-                  label={({name, count}) => count > 0 ? `${name}: ${count}` : ''}
+                  label={({name, value}) => value > 0 ? `${name}: ${value}` : ''}
                 >
                   {prospectData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { StudentProfile, TabType, SchoolData, GoogleUser, ConfigData } from './types';
 import StudentForm from './components/StudentForm';
@@ -10,17 +9,14 @@ import { sheetService } from './services/sheetService';
 import { LayoutDashboard, List, UserPlus, GraduationCap, Settings, Menu, ChevronLeft, LogOut, Loader2, RefreshCw } from 'lucide-react';
 import { DEFAULT_RANKS, DEFAULT_RESULTS, DEFAULT_PROSPECTS, DEFAULT_TARGET } from './constants';
 
-// Spreadsheet ID
 const SPREADSHEET_ID = '1Xfq3GPnLGzFM2z4vG3eDStlUKSHpWQJqMneeDRgrzDY';
 
 const App: React.FC = () => {
-  // Auth State
   const [user, setUser] = useState<GoogleUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // App Data State
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [students, setStudents] = useState<StudentProfile[]>([]);
   const [schools, setSchools] = useState<SchoolData[]>([]);
@@ -36,7 +32,6 @@ const App: React.FC = () => {
   const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // Initialize Logic
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -50,25 +45,18 @@ const App: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Handle Login Logic
   const handleLogin = async () => {
     setLoginError(null);
-    
     try {
         const token = await sheetService.login();
         const userInfo = await sheetService.getUserInfo(token);
-        
-        // Domain restriction check
         if (userInfo.hd !== 'kiryo.ac.jp') {
              setLoginError("kiryo.ac.jp ドメインのアカウントのみアクセス可能です。");
              return;
         }
-
         setAccessToken(token);
         setUser(userInfo);
-        
         await fetchData(token);
-
     } catch (error: any) {
         console.error(error);
         setLoginError("ログインに失敗しました。" + (error.message || "ポップアップがブロックされていないか確認してください。"));
@@ -110,7 +98,6 @@ const App: React.FC = () => {
     setStudents([]);
   };
 
-  // Calculate next ID for new entries
   const nextNo = students.length > 0 ? Math.max(...students.map(s => s.no)) + 1 : 1;
 
   const handleNavClick = (tab: TabType) => {
@@ -121,7 +108,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Helper to generate ID safely
   const generateId = () => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
       return crypto.randomUUID();
@@ -129,15 +115,11 @@ const App: React.FC = () => {
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
   };
 
-  // CRUD Operations with API
   const handleAddStudent = async (newStudent: StudentProfile) => {
     if (!accessToken) return;
     const studentWithId = { ...newStudent, id: generateId() };
-    
-    // Optimistic Update
     setStudents(prev => [...prev, studentWithId]);
     setActiveTab('list');
-
     try {
         await sheetService.appendStudent(SPREADSHEET_ID, accessToken, studentWithId);
     } catch (e) {
@@ -148,14 +130,11 @@ const App: React.FC = () => {
 
   const handleUpdateStudent = async (updatedStudent: StudentProfile) => {
     if (!accessToken) return;
-
-    // Optimistic Update
     setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
     if (activeTab === 'form') {
       setEditingStudent(null);
       setActiveTab('list');
     }
-
     try {
         await sheetService.updateStudent(SPREADSHEET_ID, accessToken, updatedStudent, students);
     } catch (e) {
@@ -168,14 +147,11 @@ const App: React.FC = () => {
     if (!accessToken) return;
     if (window.confirm('本当にこの生徒データを削除しますか？')) {
       const target = students.find(s => s.id === id);
-      
-      // Optimistic Update
       setStudents(prev => prev.filter(s => s.id !== id));
       if (editingStudent?.id === id) {
         setEditingStudent(null);
         setActiveTab('list');
       }
-
       try {
           await sheetService.deleteStudent(SPREADSHEET_ID, accessToken, id);
       } catch (e) {
@@ -185,7 +161,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Master Data Sync Wrapper
   const handleMasterDataUpdate = async (
       newSchools: SchoolData[], 
       newClubs: string[], 
@@ -196,13 +171,11 @@ const App: React.FC = () => {
       setClubs(newClubs);
       setRecruiters(newRecruiters);
       setConfig(newConfig);
-
       if (accessToken) {
           await sheetService.syncMasterData(SPREADSHEET_ID, accessToken, newSchools, newClubs, newRecruiters, newConfig);
       }
   };
 
-  // Special handler for target update from dashboard
   const handleTargetUpdate = async (newTarget: number) => {
       const newConfig = { ...config, recruitmentTarget: newTarget };
       setConfig(newConfig);
@@ -248,8 +221,6 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-full bg-slate-50 overflow-hidden relative">
-      
-      {/* Mobile Backdrop */}
       <div 
         className={`fixed inset-0 bg-black/50 z-30 transition-opacity duration-300 md:hidden ${
           isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -257,7 +228,6 @@ const App: React.FC = () => {
         onClick={() => setIsSidebarOpen(false)}
       />
 
-      {/* Sidebar Navigation */}
       <aside 
         className={`
           fixed inset-y-0 left-0 z-40 h-full bg-slate-900 text-white shadow-xl flex flex-col transition-all duration-300 ease-in-out
@@ -341,11 +311,10 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden relative w-full min-w-0">
         {/* Header Bar */}
         <header className="h-16 md:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shadow-sm z-10 shrink-0">
-          <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 md:flex-none">
+          <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 overflow-hidden">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
@@ -353,29 +322,28 @@ const App: React.FC = () => {
             >
               {isSidebarOpen ? <ChevronLeft className="w-6 h-6 md:w-7 md:h-7" /> : <Menu className="w-6 h-6 md:w-7 md:h-7" />}
             </button>
-            <h2 className="text-lg md:text-2xl font-bold text-slate-800 truncate min-w-0 flex-1 md:flex-none">
+            <h2 className="text-lg md:text-2xl font-bold text-slate-800 truncate min-w-0 flex-1">
               {activeTab === 'dashboard' && '勧誘状況サマリー'}
               {activeTab === 'list' && '勧誘対象生徒一覧'}
               {activeTab === 'master' && 'マスタデータ管理'}
               {activeTab === 'form' && (editingStudent ? '生徒情報編集' : '新規生徒登録')}
             </h2>
           </div>
-          <div className="flex items-center gap-4 flex-shrink-0 ml-2">
+          <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-2">
              <button
                 onClick={handleManualRefresh}
-                className={`flex items-center gap-2 px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors font-medium ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`flex items-center gap-2 px-3 md:px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors font-medium text-sm md:text-base ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={isLoading}
              >
-                <RefreshCw size={20} className={isLoading ? 'animate-spin' : ''} />
+                <RefreshCw size={18} className={`md:w-5 md:h-5 ${isLoading ? 'animate-spin' : ''}`} />
                 <span className="hidden md:inline">データ更新</span>
              </button>
-             <div className="text-sm text-slate-500 hidden md:block whitespace-nowrap">
+             <div className="text-xs md:text-sm text-slate-500 hidden md:block whitespace-nowrap">
                 接続先: Google Sheets
              </div>
           </div>
         </header>
 
-        {/* Scrollable Content */}
         <div className="flex-1 overflow-hidden relative bg-slate-50">
             {isLoading && activeTab !== 'list' && (
                  <div className="absolute inset-0 bg-white/50 z-20 flex items-center justify-center">

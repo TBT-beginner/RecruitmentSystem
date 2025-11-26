@@ -179,6 +179,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
         {/* Body - Scrollable */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-8">
           
+          {/* Order: Actions -> Club -> Municipality -> School -> Recruiter */}
+
           {/* 1. Actions */}
           {actions && actions.length > 0 && (
             <FilterSection 
@@ -190,7 +192,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
             />
           )}
 
-          {/* 2. Clubs (Moved up as requested) */}
+          {/* 2. Clubs */}
           <FilterSection 
             title="部活動" 
             items={clubs} 
@@ -270,7 +272,7 @@ const FilterSection: React.FC<{
 }> = ({ title, items, selected, onToggle, onToggleAll, cols = 4 }) => {
   const isAllSelected = items.length > 0 && items.every(i => selected.includes(i));
 
-  // Determine grid class statically
+  // Determine grid class statically to avoid purge issues
   let gridClass = 'grid-cols-2 md:grid-cols-4';
   if (cols === 2) gridClass = 'grid-cols-2';
   if (cols === 3) gridClass = 'grid-cols-2 md:grid-cols-3';
