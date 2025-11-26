@@ -312,7 +312,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
             </button>
         </div>
 
-      <div className="flex-1 p-4 md:p-8 flex flex-col gap-6 md:gap-8 overflow-visible">
+      <div className="flex-1 p-4 md:p-8 flex flex-col gap-6 md:gap-8 overflow-y-auto">
       {activeTab === 'school' && (
         <>
             {/* Add School Form */}
