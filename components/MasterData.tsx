@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { SchoolData, ConfigData } from '../types';
 import { Save, Trash2, Plus, MapPin, Search, ArrowUpDown, ArrowUp, ArrowDown, Dumbbell, Users, Sliders, X } from 'lucide-react';
@@ -13,7 +14,7 @@ interface MasterDataProps {
 type SortDirection = 'asc' | 'desc';
 
 interface SortConfig {
-  key: keyof SchoolData;
+  key: string;
   direction: SortDirection;
 }
 
@@ -67,6 +68,14 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
 
   const nextSchoolCode = useMemo(() => getNextSchoolCode(schools), [schools]);
 
+  // Handle Tab Change with Sort Reset
+  const handleTabChange = (tab: MasterTab) => {
+      setActiveTab(tab);
+      setSortConfig(null);
+      setSearchQuery('');
+      setMunicipalityFilter('');
+  };
+
   // --- Handlers (Same as before) ---
   const handleAddSchool = (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +99,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
     }
   };
 
-  const handleSort = (key: keyof SchoolData) => {
+  const handleSort = (key: string) => {
     let direction: SortDirection = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -203,8 +212,20 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
     }
     if (sortConfig) {
       result.sort((a, b) => {
-        const aValue = a[sortConfig.key] || '';
-        const bValue = b[sortConfig.key] || '';
+        const aValue = (a as any)[sortConfig.key] || '';
+        const bValue = (b as any)[sortConfig.key] || '';
+        
+        // Specific numeric sort for 'code'
+        if (sortConfig.key === 'code') {
+            const aNum = parseInt(aValue, 10);
+            const bNum = parseInt(bValue, 10);
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                if (aNum < bNum) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aNum > bNum) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            }
+        }
+
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
@@ -213,7 +234,32 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
     return result;
   }, [schools, municipalityFilter, searchQuery, sortConfig]);
 
-  const getSortIcon = (key: keyof SchoolData) => {
+  const processedClubs = useMemo(() => {
+    // Map to objects to preserve original index
+    const items = clubs.map((name, originalIndex) => ({ name, originalIndex }));
+    
+    if (sortConfig && sortConfig.key === 'name') {
+        items.sort((a, b) => {
+            const res = a.name.localeCompare(b.name, 'ja');
+            return sortConfig.direction === 'asc' ? res : -res;
+        });
+    }
+    return items;
+  }, [clubs, sortConfig]);
+
+  const processedRecruiters = useMemo(() => {
+    const items = recruiters.map((name, originalIndex) => ({ name, originalIndex }));
+    
+    if (sortConfig && sortConfig.key === 'name') {
+        items.sort((a, b) => {
+            const res = a.name.localeCompare(b.name, 'ja');
+            return sortConfig.direction === 'asc' ? res : -res;
+        });
+    }
+    return items;
+  }, [recruiters, sortConfig]);
+
+  const getSortIcon = (key: string) => {
     if (sortConfig?.key !== key) return <ArrowUpDown size={16} className="text-slate-300" />;
     return sortConfig.direction === 'asc' ? <ArrowUp size={16} className="text-blue-600" /> : <ArrowDown size={16} className="text-blue-600" />;
   };
@@ -230,7 +276,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
             ].map(tab => (
                 <button 
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as MasterTab)}
+                    onClick={() => handleTabChange(tab.id as MasterTab)}
                     className={`pb-4 px-4 text-lg font-medium transition-colors relative whitespace-nowrap ${activeTab === tab.id ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
                 >
                     <div className="flex items-center gap-2">
@@ -294,8 +340,8 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
                             { key: 'headTeacher', label: '主任・進路', width: 'w-48' },
                             { key: 'phone', label: '電話番号', width: 'w-36' },
                             ].map(({ key, label, width }) => (
-                            <th key={key} className={`px-6 py-4 cursor-pointer hover:bg-slate-200 ${width}`} onClick={() => handleSort(key as keyof SchoolData)}>
-                                <div className="flex items-center gap-1">{label} {getSortIcon(key as keyof SchoolData)}</div>
+                            <th key={key} className={`px-6 py-4 cursor-pointer hover:bg-slate-200 ${width}`} onClick={() => handleSort(key)}>
+                                <div className="flex items-center gap-1">{label} {getSortIcon(key)}</div>
                             </th>
                             ))}
                             <th className="px-6 py-4 text-right w-24">操作</th>
@@ -345,18 +391,24 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-base text-left text-slate-600">
                             <thead className="text-sm text-slate-700 uppercase bg-slate-100">
-                                <tr><th className="px-8 py-4 w-24">No.</th><th className="px-8 py-4">部活動名</th><th className="px-8 py-4 text-right w-36">操作</th></tr>
+                                <tr>
+                                    <th className="px-8 py-4 w-24">No.</th>
+                                    <th className="px-8 py-4 cursor-pointer hover:bg-slate-200" onClick={() => handleSort('name')}>
+                                        <div className="flex items-center gap-1">部活動名 {getSortIcon('name')}</div>
+                                    </th>
+                                    <th className="px-8 py-4 text-right w-36">操作</th>
+                                </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 bg-white">
-                                {clubs.map((club, index) => (
+                                {processedClubs.map(({name, originalIndex}, index) => (
                                     <tr key={index} className="hover:bg-slate-50 transition-colors group">
                                         <td className="px-8 py-5 text-slate-400 font-mono text-sm">{index + 1}</td>
-                                        <td className="px-8 py-5 font-medium text-slate-800 cursor-text relative" onDoubleClick={() => startEditingClub(index, club)}>
-                                            {editingClubIndex === index ? (
+                                        <td className="px-8 py-5 font-medium text-slate-800 cursor-text relative" onDoubleClick={() => startEditingClub(originalIndex, name)}>
+                                            {editingClubIndex === originalIndex ? (
                                                 <input autoFocus type="text" value={editClubValue} onChange={e => setEditClubValue(e.target.value)} onBlur={saveEditClub} onKeyDown={(e) => { if (e.key === 'Enter') saveEditClub(); if (e.key === 'Escape') cancelEditClub(); }} className="absolute inset-0 w-full h-full px-7 py-4 border-2 border-blue-400 focus:outline-none bg-white shadow-lg z-20 rounded-none text-lg" />
-                                            ) : club}
+                                            ) : name}
                                         </td>
-                                        <td className="px-8 py-5 text-right"><button onClick={() => handleDeleteClub(club)} className="text-slate-300 hover:text-red-600 hover:bg-red-50 p-2 rounded-full"><Trash2 size={20} /></button></td>
+                                        <td className="px-8 py-5 text-right"><button onClick={() => handleDeleteClub(name)} className="text-slate-300 hover:text-red-600 hover:bg-red-50 p-2 rounded-full"><Trash2 size={20} /></button></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -385,18 +437,24 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-base text-left text-slate-600">
                             <thead className="text-sm text-slate-700 uppercase bg-slate-100">
-                                <tr><th className="px-8 py-4 w-24">No.</th><th className="px-8 py-4">担当者名</th><th className="px-8 py-4 text-right w-36">操作</th></tr>
+                                <tr>
+                                    <th className="px-8 py-4 w-24">No.</th>
+                                    <th className="px-8 py-4 cursor-pointer hover:bg-slate-200" onClick={() => handleSort('name')}>
+                                        <div className="flex items-center gap-1">担当者名 {getSortIcon('name')}</div>
+                                    </th>
+                                    <th className="px-8 py-4 text-right w-36">操作</th>
+                                </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 bg-white">
-                                {recruiters.map((recruiter, index) => (
+                                {processedRecruiters.map(({name, originalIndex}, index) => (
                                     <tr key={index} className="hover:bg-slate-50 transition-colors group">
                                         <td className="px-8 py-5 text-slate-400 font-mono text-sm">{index + 1}</td>
-                                        <td className="px-8 py-5 font-medium text-slate-800 cursor-text relative" onDoubleClick={() => startEditingRecruiter(index, recruiter)}>
-                                            {editingRecruiterIndex === index ? (
+                                        <td className="px-8 py-5 font-medium text-slate-800 cursor-text relative" onDoubleClick={() => startEditingRecruiter(originalIndex, name)}>
+                                            {editingRecruiterIndex === originalIndex ? (
                                                 <input autoFocus type="text" value={editRecruiterValue} onChange={e => setEditRecruiterValue(e.target.value)} onBlur={saveEditRecruiter} onKeyDown={(e) => { if (e.key === 'Enter') saveEditRecruiter(); if (e.key === 'Escape') cancelEditRecruiter(); }} className="absolute inset-0 w-full h-full px-7 py-4 border-2 border-blue-400 focus:outline-none bg-white shadow-lg z-20 rounded-none text-lg" />
-                                            ) : recruiter}
+                                            ) : name}
                                         </td>
-                                        <td className="px-8 py-5 text-right"><button onClick={() => handleDeleteRecruiter(recruiter)} className="text-slate-300 hover:text-red-600 hover:bg-red-50 p-2 rounded-full"><Trash2 size={20} /></button></td>
+                                        <td className="px-8 py-5 text-right"><button onClick={() => handleDeleteRecruiter(name)} className="text-slate-300 hover:text-red-600 hover:bg-red-50 p-2 rounded-full"><Trash2 size={20} /></button></td>
                                     </tr>
                                 ))}
                             </tbody>
