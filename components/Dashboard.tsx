@@ -308,9 +308,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip 
                   itemSorter={(item) => {
-                    if (item.name === '対総数') return -3;
+                    if (item.name === '対総総数') return -1;
                     if (item.name === '声掛け済み') return -2;
-                    if (item.name === '見込み○') return -1;
+                    if (item.name === '見込み○') return -3;
                     return 0;
                   }}
                 />
