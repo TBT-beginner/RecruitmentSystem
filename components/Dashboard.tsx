@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { StudentProfile, SchoolData } from '../types';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Filter, X, Edit2, Check } from 'lucide-react';
 import FilterModal, { FilterState } from './FilterModal';
 
