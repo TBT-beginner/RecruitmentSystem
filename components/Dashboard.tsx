@@ -308,14 +308,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip 
                   itemSorter={(item) => {
-                    if (item.name === '対総総数') return -1;
-                    if (item.name === '声掛け済み') return -2;
-                    if (item.name === '見込み○') return -3;
-                    return 0;
+                    if (item.name === '対象総数') return 0;
+                    if (item.name === '声掛け済み') return 1;
+                    if (item.name === '見込み○') return 2;
+                    return 3;
                   }}
                 />
-                <Legend verticalAlign="top" height={36} />
-                {/* 凡例とグラフの表示順序を制御するため、Barの記述順を固定 */}
+                <Legend verticalAlign="top" height={36} iconSize={16} />
+                {/* 凡例とグラフの表示順序: 対象総数 -> 声掛け済み -> 見込み○ */}
                 <Bar dataKey="count" name="対象総数" fill="#8884d8" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="contacted" name="声掛け済み" fill="#82ca9d" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="prospect" name="見込み○" fill="#ffc658" radius={[4, 4, 0, 0]} />
