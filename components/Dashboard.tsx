@@ -46,11 +46,6 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (filters.clubNames.length > 0 && !filters.clubNames.includes(s.clubName)) return false;
       // Recruiter Filter
       if (filters.recruiterTypes.length > 0 && !filters.recruiterTypes.includes(s.recruiterType)) return false;
-      // Action Filter
-      // Note: This needs logic to match the nextAction text, assuming the filter passed contains the text
-      // For now, simpler filtering on main properties. 
-      // If we need action filtering in Dashboard, we'd need to calculate action for each student here too.
-      // Given the complexity, dashboard filtering usually focuses on attributes, but let's leave it as is for now.
       
       return true;
     });
@@ -91,7 +86,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const contacted = filteredStudents.filter(s => s.callDatePrincipal || s.callDateAdvisor).length;
   const visited = filteredStudents.filter(s => s.visitDate && s.visitDate !== '×').length;
   
-  // 合格定義: S1, S2, S3, S4, なし (旧データの'確約/合格'も念のため含める)
+  // 合格定義
   const acceptedStatuses = ['S1', 'S2', 'S3', 'S4', 'なし', '確約/合格'];
   const accepted = filteredStudents.filter(s => acceptedStatuses.includes(s.result)).length;
 
@@ -113,7 +108,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     setIsEditingTarget(false);
   };
 
-  const achievementRate = Math.min(100, Math.round((accepted / recruitmentTarget) * 100));
+  const achievementRate = recruitmentTarget > 0 ? Math.min(100, Math.round((accepted / recruitmentTarget) * 100)) : 0;
 
   return (
     <div className="p-4 md:p-6 space-y-6 md:space-y-8 overflow-y-auto h-full pb-48">
@@ -311,8 +306,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{fontSize: 12}} height={70} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                <Tooltip />
+                <Tooltip 
+                  itemSorter={(item) => {
+                    if (item.name === '対象総数') return -3;
+                    if (item.name === '声掛け済み') return -2;
+                    if (item.name === '見込み○') return -1;
+                    return 0;
+                  }}
+                />
                 <Legend verticalAlign="top" height={36} />
+                {/* 凡例とグラフの表示順序を制御するため、Barの記述順を固定 */}
                 <Bar dataKey="count" name="対象総数" fill="#8884d8" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="contacted" name="声掛け済み" fill="#82ca9d" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="prospect" name="見込み○" fill="#ffc658" radius={[4, 4, 0, 0]} />
