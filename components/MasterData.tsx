@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { SchoolData, ConfigData } from '../types';
 import { Save, Trash2, Plus, MapPin, Search, ArrowUpDown, ArrowUp, ArrowDown, Dumbbell, Users, Sliders, X } from 'lucide-react';

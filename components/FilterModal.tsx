@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { SchoolData } from '../types';
 import { X, Check, Filter, RotateCcw } from 'lucide-react';

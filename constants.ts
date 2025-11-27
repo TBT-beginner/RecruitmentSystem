@@ -1,4 +1,3 @@
-
 import { SchoolData } from './types';
 
 // 定数はスプレッドシート管理に移行しました。

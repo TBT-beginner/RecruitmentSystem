@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { StudentProfile, SchoolData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';

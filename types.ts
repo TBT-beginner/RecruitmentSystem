@@ -1,4 +1,3 @@
-
 // 固定のEnumを削除し、スプレッドシート管理のための文字列型に変更
 export type ScholarshipRank = string;
 export type RecruitmentResult = string;

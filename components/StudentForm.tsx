@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { StudentProfile, GenderValues, SchoolData } from '../types';
 import { Save, X, Plus, School, Trash2, XCircle, ChevronLeft } from 'lucide-react';

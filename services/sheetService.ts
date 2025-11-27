@@ -1,4 +1,3 @@
-
 import { StudentProfile, SchoolData, ConfigData } from '../types';
 import { DEFAULT_RANKS, DEFAULT_RESULTS, DEFAULT_PROSPECTS, DEFAULT_TARGET } from '../constants';
 
