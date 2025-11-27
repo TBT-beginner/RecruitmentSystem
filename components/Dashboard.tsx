@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { StudentProfile, SchoolData } from '../types';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Filter, X, Edit2, Check } from 'lucide-react';
 import FilterModal, { FilterState } from './FilterModal';
 
@@ -17,6 +17,24 @@ interface DashboardProps {
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
+// Custom Legend Component to enforce order
+const CustomLegend = () => (
+  <div className="flex flex-wrap justify-center gap-4 mb-4 text-sm font-medium text-slate-600">
+    <div className="flex items-center gap-2">
+      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#8884d8' }}></div>
+      <span>対象総数</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#82ca9d' }}></div>
+      <span>声掛け済み</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#ffc658' }}></div>
+      <span>見込み○</span>
+    </div>
+  </div>
+);
 
 const Dashboard: React.FC<DashboardProps> = ({ 
     students, recruitmentTarget, setRecruitmentTarget, schools, clubs, recruiters, ranks, prospects, results 
@@ -299,7 +317,10 @@ const Dashboard: React.FC<DashboardProps> = ({
        {/* Detailed Club Chart - Full Width Row */}
        <div className="w-full mb-8">
         <div className="bg-white p-4 md:p-8 rounded-xl shadow-sm border border-slate-200 h-96 md:h-[30rem] flex flex-col min-w-0">
-           <h3 className="text-lg font-bold text-slate-700 mb-4 uppercase tracking-wide flex-shrink-0">部活動別状況詳細</h3>
+           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+             <h3 className="text-lg font-bold text-slate-700 uppercase tracking-wide flex-shrink-0">部活動別状況詳細</h3>
+             <CustomLegend />
+           </div>
            <div className="flex-1 min-h-0 w-full">
              <ResponsiveContainer width="99%" height="100%">
                <BarChart data={clubDetailedData} margin={{ top: 5, right: 20, left: 10, bottom: 60 }}>
@@ -309,16 +330,20 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <Tooltip 
                   cursor={{fill: 'transparent'}}
                   itemSorter={(item) => {
-                    // Sort by dataKey to ensure correct order in tooltip
-                    if (item.dataKey === 'count') return 0;      // 1. Target Total
-                    if (item.dataKey === 'contacted') return 1;  // 2. Contacted
-                    if (item.dataKey === 'prospect') return 2;   // 3. Prospect
+                    // Sort by dataKey to ensure correct order in tooltip: Total -> Contacted -> Prospect
+                    if (item.dataKey === 'count') return 0;
+                    if (item.dataKey === 'contacted') return 1;
+                    if (item.dataKey === 'prospect') return 2;
                     return 99;
                   }}
                 />
-                <Legend verticalAlign="top" height={36} iconSize={16} />
                 
-                {/* Order of Bars explicitly set: 1. Total, 2. Contacted, 3. Prospect */}
+                {/* 
+                  DEFINITIVE ORDER:
+                  1. Total (count)
+                  2. Contacted (contacted)
+                  3. Prospect (prospect)
+                */}
                 <Bar dataKey="count" name="対象総数" fill="#8884d8" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="contacted" name="声掛け済み" fill="#82ca9d" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="prospect" name="見込み○" fill="#ffc658" radius={[4, 4, 0, 0]} />
