@@ -317,14 +317,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                   }}
                 />
                 <Legend verticalAlign="top" height={36} iconSize={16} />
-                {/* 
-                  Order of Bars determines:
-                  1. Stacking order (if stacked) - not applicable here
-                  2. Legend order (Left to Right)
-                  3. Default Tooltip order (Top to Bottom)
-                  
-                  Target: 1. Total (count), 2. Contacted, 3. Prospect
-                */}
+                
+                {/* Order of Bars explicitly set: 1. Total, 2. Contacted, 3. Prospect */}
                 <Bar dataKey="count" name="対象総数" fill="#8884d8" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="contacted" name="声掛け済み" fill="#82ca9d" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="prospect" name="見込み○" fill="#ffc658" radius={[4, 4, 0, 0]} />
