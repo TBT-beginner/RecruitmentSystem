@@ -307,15 +307,24 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{fontSize: 12}} height={70} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip 
+                  cursor={{fill: 'transparent'}}
                   itemSorter={(item) => {
-                    if (item.name === '対象総数') return 0;
-                    if (item.name === '声掛け済み') return 1;
-                    if (item.name === '見込み○') return 2;
-                    return 3;
+                    // Sort by dataKey to ensure correct order in tooltip
+                    if (item.dataKey === 'count') return 0;      // 1. Target Total
+                    if (item.dataKey === 'contacted') return 1;  // 2. Contacted
+                    if (item.dataKey === 'prospect') return 2;   // 3. Prospect
+                    return 99;
                   }}
                 />
                 <Legend verticalAlign="top" height={36} iconSize={16} />
-                {/* 凡例とグラフの表示順序: 対象総数 -> 声掛け済み -> 見込み○ */}
+                {/* 
+                  Order of Bars determines:
+                  1. Stacking order (if stacked) - not applicable here
+                  2. Legend order (Left to Right)
+                  3. Default Tooltip order (Top to Bottom)
+                  
+                  Target: 1. Total (count), 2. Contacted, 3. Prospect
+                */}
                 <Bar dataKey="count" name="対象総数" fill="#8884d8" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="contacted" name="声掛け済み" fill="#82ca9d" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="prospect" name="見込み○" fill="#ffc658" radius={[4, 4, 0, 0]} />
