@@ -47,6 +47,16 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
   const [newResult, setNewResult] = useState('');
   const [newProspect, setNewProspect] = useState('');
 
+  // Modal States
+  const [isAddingSchool, setIsAddingSchool] = useState(false);
+  const [isAddingClub, setIsAddingClub] = useState(false);
+  const [isAddingRecruiter, setIsAddingRecruiter] = useState(false);
+  
+  // Config Modal States
+  const [isAddingRank, setIsAddingRank] = useState(false);
+  const [isAddingResult, setIsAddingResult] = useState(false);
+  const [isAddingProspect, setIsAddingProspect] = useState(false);
+
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   
   // Edit state (School)
@@ -76,7 +86,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
       setMunicipalityFilter('');
   };
 
-  // --- Handlers (Same as before) ---
+  // --- Handlers ---
   const handleAddSchool = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSchool.name || !newSchool.municipality) return;
@@ -90,7 +100,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
     };
     onUpdateAll([...schools, schoolToAdd], clubs, recruiters, config);
     setNewSchool({ municipality: newSchool.municipality, name: '' });
-    alert(`学校を追加しました (コード: ${schoolToAdd.code})`);
+    setIsAddingSchool(false);
   };
 
   const handleDeleteSchool = (code: string) => {
@@ -133,6 +143,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
     if (clubs.includes(newClub.trim())) { alert('登録済みです'); return; }
     onUpdateAll(schools, [...clubs, newClub.trim()], recruiters, config);
     setNewClub('');
+    setIsAddingClub(false);
   };
 
   const handleDeleteClub = (clubName: string) => {
@@ -163,6 +174,7 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
     if (recruiters.includes(newRecruiter.trim())) { alert('登録済みです'); return; }
     onUpdateAll(schools, clubs, [...recruiters, newRecruiter.trim()], config);
     setNewRecruiter('');
+    setIsAddingRecruiter(false);
   };
 
   const handleDeleteRecruiter = (recruiterName: string) => {
@@ -201,6 +213,16 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
           }
       }
       onUpdateAll(schools, clubs, recruiters, { ...config, [type]: newList });
+  };
+
+  const handleAddConfigItem = (type: 'ranks' | 'results' | 'prospects', e: React.FormEvent) => {
+      e.preventDefault();
+      let val = '';
+      if (type === 'ranks') { val = newRank; setNewRank(''); setIsAddingRank(false); }
+      if (type === 'results') { val = newResult; setNewResult(''); setIsAddingResult(false); }
+      if (type === 'prospects') { val = newProspect; setNewProspect(''); setIsAddingProspect(false); }
+      
+      handleConfigUpdate(type, 'add', val);
   };
 
   const processedSchools = useMemo(() => {
@@ -291,32 +313,20 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
       {/* Main Content Area - Scrollable */}
       <div className="flex-1 overflow-y-auto bg-slate-50 flex flex-col">
         {activeTab === 'school' && (
-            <div className="p-4 md:p-8 flex flex-col gap-6 md:gap-8">
-                {/* Form */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
-                    <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-3">
-                    <Plus size={24} className="text-blue-600" /> 学校マスタ新規追加
-                    </h2>
-                    <form onSubmit={handleAddSchool} className="flex flex-col md:flex-row gap-4 md:gap-6 md:items-end">
-                    <div className="w-full md:w-32">
-                        <label className="block text-base font-medium text-slate-700 mb-2">コード</label>
-                        <input type="text" value={nextSchoolCode} readOnly className="w-full bg-slate-100 border border-slate-300 rounded-lg p-3 text-lg text-slate-500 cursor-not-allowed font-mono" />
-                    </div>
-                    <div className="flex-1">
-                        <label className="block text-base font-medium text-slate-700 mb-2">市町村</label>
-                        <input list="municipalities" type="text" value={newSchool.municipality} onChange={e => setNewSchool(prev => ({ ...prev, municipality: e.target.value }))} className="w-full border border-slate-300 rounded-lg p-3 text-lg" placeholder="例: 水戸市" required />
-                        <datalist id="municipalities">{municipalities.map(m => <option key={m} value={m} />)}</datalist>
-                    </div>
-                    <div className="flex-1">
-                        <label className="block text-base font-medium text-slate-700 mb-2">中学校名</label>
-                        <input type="text" value={newSchool.name} onChange={e => setNewSchool(prev => ({ ...prev, name: e.target.value }))} className="w-full border border-slate-300 rounded-lg p-3 text-lg" placeholder="例: 水戸一" required />
-                    </div>
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-3 font-medium shadow-sm text-lg w-full md:w-auto"><Save size={24} /> 追加</button>
-                    </form>
+            <div className="flex flex-col">
+                {/* Header Actions */}
+                <div className="flex justify-between items-center p-4 md:p-8 pb-0 md:pb-6">
+                    <h2 className="text-xl md:text-2xl font-bold text-slate-800">学校情報管理</h2>
+                    <button 
+                        onClick={() => setIsAddingSchool(true)}
+                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm font-bold"
+                    >
+                        <Plus size={20} /> 新規学校追加
+                    </button>
                 </div>
 
                 {/* List */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-col overflow-visible">
+                <div className="bg-white border-y border-slate-200 flex-col overflow-visible mt-4">
                     <div className="p-4 md:p-6 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-slate-50 sticky top-0 z-20">
                         <h3 className="font-bold text-slate-700 text-lg">登録済み学校一覧 ({processedSchools.length}校)</h3>
                         <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center w-full md:w-auto">
@@ -373,18 +383,18 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
         )}
 
         {activeTab === 'club' && (
-            <div className="p-4 md:p-8 flex flex-col gap-6 md:gap-8">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
-                    <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-3"><Plus size={24} className="text-blue-600" /> 部活動マスタ新規追加</h2>
-                    <form onSubmit={handleAddClub} className="flex flex-col md:flex-row gap-4 md:gap-6 md:items-end">
-                    <div className="flex-1 max-w-md">
-                        <label className="block text-base font-medium text-slate-700 mb-2">部活動名</label>
-                        <input type="text" value={newClub} onChange={e => setNewClub(e.target.value)} className="w-full border border-slate-300 rounded-lg p-3 text-lg" placeholder="例: 陸上競技" required />
-                    </div>
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-3 font-medium shadow-sm text-lg w-full md:w-auto"><Save size={24} /> 追加</button>
-                    </form>
+            <div className="flex flex-col">
+                 <div className="flex justify-between items-center p-4 md:p-8 pb-0 md:pb-6">
+                    <h2 className="text-xl md:text-2xl font-bold text-slate-800">部活動情報管理</h2>
+                    <button 
+                        onClick={() => setIsAddingClub(true)}
+                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm font-bold"
+                    >
+                        <Plus size={20} /> 新規部活動追加
+                    </button>
                 </div>
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-col overflow-visible">
+
+                <div className="bg-white border-y border-slate-200 flex-col overflow-visible mt-4">
                     <div className="p-6 border-b border-slate-200 bg-slate-50 sticky top-0 z-20">
                         <h3 className="font-bold text-slate-700 text-lg">登録済み部活動一覧 ({clubs.length}部)</h3>
                     </div>
@@ -419,18 +429,18 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
         )}
 
         {activeTab === 'recruiter' && (
-             <div className="p-4 md:p-8 flex flex-col gap-6 md:gap-8">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex-shrink-0">
-                    <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-3"><Plus size={24} className="text-blue-600" /> 担当者マスタ新規追加</h2>
-                    <form onSubmit={handleAddRecruiter} className="flex flex-col md:flex-row gap-4 md:gap-6 md:items-end">
-                    <div className="flex-1 max-w-md">
-                        <label className="block text-base font-medium text-slate-700 mb-2">担当者名</label>
-                        <input type="text" value={newRecruiter} onChange={e => setNewRecruiter(e.target.value)} className="w-full border border-slate-300 rounded-lg p-3 text-lg" placeholder="例: 〇〇教頭" required />
-                    </div>
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-3 font-medium shadow-sm text-lg w-full md:w-auto"><Save size={24} /> 追加</button>
-                    </form>
+             <div className="flex flex-col">
+                <div className="flex justify-between items-center p-4 md:p-8 pb-0 md:pb-6">
+                    <h2 className="text-xl md:text-2xl font-bold text-slate-800">担当者情報管理</h2>
+                    <button 
+                        onClick={() => setIsAddingRecruiter(true)}
+                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm font-bold"
+                    >
+                        <Plus size={20} /> 新規担当者追加
+                    </button>
                 </div>
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-col overflow-visible">
+
+                <div className="bg-white border-y border-slate-200 flex-col overflow-visible mt-4">
                     <div className="p-6 border-b border-slate-200 bg-slate-50 sticky top-0 z-20">
                         <h3 className="font-bold text-slate-700 text-lg">登録済み担当者一覧 ({recruiters.length}名)</h3>
                     </div>
@@ -472,12 +482,9 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Ranks */}
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
-                        <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700"><span>奨学生ランク</span></div>
-                        <div className="p-4 border-b border-slate-100 bg-white">
-                            <form onSubmit={(e) => { e.preventDefault(); handleConfigUpdate('ranks', 'add', newRank); setNewRank(''); }} className="flex gap-2">
-                                <input type="text" value={newRank} onChange={e => setNewRank(e.target.value)} placeholder="追加..." className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm" />
-                                <button type="submit" disabled={!newRank} className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 disabled:opacity-50"><Plus size={18}/></button>
-                            </form>
+                        <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 flex justify-between items-center">
+                            <span>奨学生ランク</span>
+                            <button onClick={() => setIsAddingRank(true)} className="text-blue-600 hover:bg-blue-50 p-1 rounded"><Plus size={20}/></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-2">
                             {config.ranks.map((item, idx) => (
@@ -490,12 +497,9 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
                     </div>
                     {/* Results */}
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
-                        <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700"><span>勧誘結果</span></div>
-                        <div className="p-4 border-b border-slate-100 bg-white">
-                            <form onSubmit={(e) => { e.preventDefault(); handleConfigUpdate('results', 'add', newResult); setNewResult(''); }} className="flex gap-2">
-                                <input type="text" value={newResult} onChange={e => setNewResult(e.target.value)} placeholder="追加..." className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm" />
-                                <button type="submit" disabled={!newResult} className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 disabled:opacity-50"><Plus size={18}/></button>
-                            </form>
+                        <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 flex justify-between items-center">
+                            <span>勧誘結果</span>
+                            <button onClick={() => setIsAddingResult(true)} className="text-blue-600 hover:bg-blue-50 p-1 rounded"><Plus size={20}/></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-2">
                             {config.results.map((item, idx) => (
@@ -508,12 +512,9 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
                     </div>
                     {/* Prospects */}
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
-                        <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700"><span>見込み度</span></div>
-                        <div className="p-4 border-b border-slate-100 bg-white">
-                            <form onSubmit={(e) => { e.preventDefault(); handleConfigUpdate('prospects', 'add', newProspect); setNewProspect(''); }} className="flex gap-2">
-                                <input type="text" value={newProspect} onChange={e => setNewProspect(e.target.value)} placeholder="追加..." className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm" />
-                                <button type="submit" disabled={!newProspect} className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 disabled:opacity-50"><Plus size={18}/></button>
-                            </form>
+                        <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 flex justify-between items-center">
+                            <span>見込み度</span>
+                            <button onClick={() => setIsAddingProspect(true)} className="text-blue-600 hover:bg-blue-50 p-1 rounded"><Plus size={20}/></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-2">
                             {config.prospects.map((item, idx) => (
@@ -528,6 +529,128 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
              </div>
         )}
       </div>
+
+      {/* --- Modals --- */}
+      
+      {/* 1. Add School Modal */}
+      {isAddingSchool && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200">
+                  <h4 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                      <MapPin size={28} /> 新規学校登録
+                  </h4>
+                  <form onSubmit={handleAddSchool} className="space-y-6">
+                       <div>
+                          <label className="block text-sm font-bold text-slate-500 uppercase mb-2">コード (自動採番)</label>
+                          <input type="text" value={nextSchoolCode} readOnly className="w-full bg-slate-100 border border-slate-300 rounded-xl p-4 text-lg text-slate-500 cursor-not-allowed font-mono" />
+                       </div>
+                       <div>
+                          <label className="block text-sm font-bold text-slate-500 uppercase mb-2">市町村</label>
+                          <input list="municipalities-modal" type="text" value={newSchool.municipality} onChange={e => setNewSchool(prev => ({ ...prev, municipality: e.target.value }))} className="w-full border border-slate-300 rounded-xl p-4 text-lg" placeholder="例: 水戸市" required autoFocus />
+                          <datalist id="municipalities-modal">{municipalities.map(m => <option key={m} value={m} />)}</datalist>
+                       </div>
+                       <div>
+                          <label className="block text-sm font-bold text-slate-500 uppercase mb-2">中学校名</label>
+                          <input type="text" value={newSchool.name} onChange={e => setNewSchool(prev => ({ ...prev, name: e.target.value }))} className="w-full border border-slate-300 rounded-xl p-4 text-lg" placeholder="例: 水戸一" required />
+                       </div>
+                       <div className="flex justify-end gap-4 mt-8">
+                          <button type="button" onClick={() => setIsAddingSchool(false)} className="px-6 py-3 text-lg text-slate-600 hover:bg-slate-100 rounded-xl">キャンセル</button>
+                          <button type="submit" className="px-6 py-3 text-lg bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold flex items-center gap-2"><Save size={20}/> 追加する</button>
+                       </div>
+                  </form>
+              </div>
+          </div>
+      )}
+
+      {/* 2. Add Club Modal */}
+      {isAddingClub && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200">
+                  <h4 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                      <Dumbbell size={28} /> 新規部活動登録
+                  </h4>
+                  <form onSubmit={handleAddClub} className="space-y-6">
+                       <div>
+                          <label className="block text-sm font-bold text-slate-500 uppercase mb-2">部活動名</label>
+                          <input type="text" value={newClub} onChange={e => setNewClub(e.target.value)} className="w-full border border-slate-300 rounded-xl p-4 text-lg" placeholder="例: 陸上競技" required autoFocus />
+                       </div>
+                       <div className="flex justify-end gap-4 mt-8">
+                          <button type="button" onClick={() => setIsAddingClub(false)} className="px-6 py-3 text-lg text-slate-600 hover:bg-slate-100 rounded-xl">キャンセル</button>
+                          <button type="submit" className="px-6 py-3 text-lg bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold flex items-center gap-2"><Save size={20}/> 追加する</button>
+                       </div>
+                  </form>
+              </div>
+          </div>
+      )}
+
+      {/* 3. Add Recruiter Modal */}
+      {isAddingRecruiter && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-lg border border-slate-200">
+                  <h4 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                      <Users size={28} /> 新規担当者登録
+                  </h4>
+                  <form onSubmit={handleAddRecruiter} className="space-y-6">
+                       <div>
+                          <label className="block text-sm font-bold text-slate-500 uppercase mb-2">担当者名</label>
+                          <input type="text" value={newRecruiter} onChange={e => setNewRecruiter(e.target.value)} className="w-full border border-slate-300 rounded-xl p-4 text-lg" placeholder="例: 〇〇教頭" required autoFocus />
+                       </div>
+                       <div className="flex justify-end gap-4 mt-8">
+                          <button type="button" onClick={() => setIsAddingRecruiter(false)} className="px-6 py-3 text-lg text-slate-600 hover:bg-slate-100 rounded-xl">キャンセル</button>
+                          <button type="submit" className="px-6 py-3 text-lg bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold flex items-center gap-2"><Save size={20}/> 追加する</button>
+                       </div>
+                  </form>
+              </div>
+          </div>
+      )}
+
+      {/* 4. Config Add Modals */}
+      {/* Rank Modal */}
+      {isAddingRank && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+                  <h4 className="text-xl font-bold mb-4">奨学生ランク追加</h4>
+                  <form onSubmit={(e) => handleAddConfigItem('ranks', e)} className="space-y-4">
+                      <input type="text" value={newRank} onChange={e => setNewRank(e.target.value)} className="w-full border p-3 rounded-lg" placeholder="例: S5" autoFocus />
+                      <div className="flex justify-end gap-3">
+                          <button type="button" onClick={() => setIsAddingRank(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">キャンセル</button>
+                          <button type="submit" disabled={!newRank} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">追加</button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      )}
+      {/* Result Modal */}
+      {isAddingResult && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+                  <h4 className="text-xl font-bold mb-4">勧誘結果追加</h4>
+                  <form onSubmit={(e) => handleAddConfigItem('results', e)} className="space-y-4">
+                      <input type="text" value={newResult} onChange={e => setNewResult(e.target.value)} className="w-full border p-3 rounded-lg" placeholder="例: その他" autoFocus />
+                      <div className="flex justify-end gap-3">
+                          <button type="button" onClick={() => setIsAddingResult(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">キャンセル</button>
+                          <button type="submit" disabled={!newResult} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">追加</button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      )}
+      {/* Prospect Modal */}
+      {isAddingProspect && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+                  <h4 className="text-xl font-bold mb-4">見込み度追加</h4>
+                  <form onSubmit={(e) => handleAddConfigItem('prospects', e)} className="space-y-4">
+                      <input type="text" value={newProspect} onChange={e => setNewProspect(e.target.value)} className="w-full border p-3 rounded-lg" placeholder="例: △" autoFocus />
+                      <div className="flex justify-end gap-3">
+                          <button type="button" onClick={() => setIsAddingProspect(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">キャンセル</button>
+                          <button type="submit" disabled={!newProspect} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">追加</button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      )}
+
     </div>
   );
 };

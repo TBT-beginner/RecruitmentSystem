@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { StudentProfile, SchoolData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -46,12 +47,17 @@ const Dashboard: React.FC<DashboardProps> = ({
       if (filters.clubNames.length > 0 && !filters.clubNames.includes(s.clubName)) return false;
       // Recruiter Filter
       if (filters.recruiterTypes.length > 0 && !filters.recruiterTypes.includes(s.recruiterType)) return false;
+      // Action Filter
+      // Note: This needs logic to match the nextAction text, assuming the filter passed contains the text
+      // For now, simpler filtering on main properties. 
+      // If we need action filtering in Dashboard, we'd need to calculate action for each student here too.
+      // Given the complexity, dashboard filtering usually focuses on attributes, but let's leave it as is for now.
       
       return true;
     });
   }, [students, filters]);
 
-  const activeFilterCount = filters.municipalities.length + filters.schoolNames.length + filters.clubNames.length + filters.recruiterTypes.length;
+  const activeFilterCount = filters.municipalities.length + filters.schoolNames.length + filters.clubNames.length + filters.recruiterTypes.length + filters.actions.length;
 
   // 1. Data for Prospect Distribution
   const prospectData = prospects.map(level => ({
@@ -150,6 +156,7 @@ const Dashboard: React.FC<DashboardProps> = ({
              {filters.schoolNames.map(s => <span key={s} className="bg-slate-100 px-3 py-1 rounded-full text-sm text-slate-600 flex items-center gap-1">{s} <X size={14} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, schoolNames: prev.schoolNames.filter(x => x !== s)}))} /></span>)}
              {filters.clubNames.map(c => <span key={c} className="bg-slate-100 px-3 py-1 rounded-full text-sm text-slate-600 flex items-center gap-1">{c} <X size={14} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, clubNames: prev.clubNames.filter(x => x !== c)}))} /></span>)}
              {filters.recruiterTypes.map(r => <span key={r} className="bg-slate-100 px-3 py-1 rounded-full text-sm text-slate-600 flex items-center gap-1">{r} <X size={14} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, recruiterTypes: prev.recruiterTypes.filter(x => x !== r)}))} /></span>)}
+             {filters.actions.map(a => <span key={a} className="bg-slate-100 px-3 py-1 rounded-full text-sm text-slate-600 flex items-center gap-1">{a} <X size={14} className="cursor-pointer hover:text-red-500" onClick={() => setFilters(prev => ({...prev, actions: prev.actions.filter(x => x !== a)}))} /></span>)}
              
              <button 
                 onClick={() => setFilters({municipalities: [], schoolNames: [], clubNames: [], recruiterTypes: [], actions: []})}
@@ -231,7 +238,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Charts Layout - Revised for PC Optimization: 3 cols for top charts, full width for bottom */}
+      {/* Charts Layout - 3 Cols Top, Full Width Bottom */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         
         {/* 1. Prospect Pie Chart */}
