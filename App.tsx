@@ -5,8 +5,9 @@ import StudentList from './components/StudentList';
 import Dashboard from './components/Dashboard';
 import MasterData from './components/MasterData';
 import Login from './components/Login';
+import ManualModal, { ManualSection } from './components/ManualModal';
 import { sheetService } from './services/sheetService';
-import { LayoutDashboard, List, UserPlus, GraduationCap, Settings, Menu, ChevronLeft, LogOut, Loader2, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, List, UserPlus, GraduationCap, Settings, Menu, ChevronLeft, LogOut, Loader2, RefreshCw, BookOpen, HelpCircle } from 'lucide-react';
 import { DEFAULT_RANKS, DEFAULT_RESULTS, DEFAULT_PROSPECTS, DEFAULT_TARGET } from './constants';
 
 const SPREADSHEET_ID = '1Xfq3GPnLGzFM2z4vG3eDStlUKSHpWQJqMneeDRgrzDY';
@@ -31,6 +32,10 @@ const App: React.FC = () => {
   
   const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Manual Modal State
+  const [isManualOpen, setIsManualOpen] = useState(false);
+  const [manualSection, setManualSection] = useState<ManualSection>('dashboard');
   
   useEffect(() => {
     const handleResize = () => {
@@ -106,6 +111,12 @@ const App: React.FC = () => {
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
+  };
+
+  // Open Manual Helper
+  const openManual = (section: ManualSection) => {
+    setManualSection(section);
+    setIsManualOpen(true);
   };
 
   const generateId = () => {
@@ -221,6 +232,12 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-full bg-slate-50 overflow-hidden relative">
+      <ManualModal 
+        isOpen={isManualOpen} 
+        onClose={() => setIsManualOpen(false)} 
+        initialSection={manualSection} 
+      />
+
       <div 
         className={`fixed inset-0 bg-black/50 z-30 transition-opacity duration-300 md:hidden ${
           isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -304,9 +321,15 @@ const App: React.FC = () => {
           </div>
         </nav>
 
-        <div className="p-4 border-t border-slate-800 min-w-[18rem]">
-          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-red-400 transition-colors text-sm py-2">
-             <LogOut size={16} /> ログアウト
+        <div className="p-4 border-t border-slate-800 min-w-[18rem] space-y-2">
+           <button 
+             onClick={() => openManual('intro')}
+             className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-sm py-3"
+           >
+             <BookOpen size={18} /> 操作マニュアル
+          </button>
+          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors text-sm py-3">
+             <LogOut size={18} /> ログアウト
           </button>
         </div>
       </aside>
@@ -322,7 +345,7 @@ const App: React.FC = () => {
             >
               {isSidebarOpen ? <ChevronLeft className="w-6 h-6 md:w-7 md:h-7" /> : <Menu className="w-6 h-6 md:w-7 md:h-7" />}
             </button>
-            <h2 className="text-lg md:text-2xl font-bold text-slate-800 truncate min-w-0 flex-1">
+            <h2 className="text-lg md:text-2xl font-bold text-slate-800 truncate min-w-0 flex-1 flex items-center gap-2">
               {activeTab === 'dashboard' && '勧誘状況サマリー'}
               {activeTab === 'list' && '勧誘対象生徒一覧'}
               {activeTab === 'master' && 'マスタデータ管理'}
@@ -362,6 +385,7 @@ const App: React.FC = () => {
               ranks={config.ranks}
               prospects={config.prospects}
               results={config.results}
+              onOpenHelp={() => openManual('dashboard')}
             />
           )}
           
@@ -377,6 +401,7 @@ const App: React.FC = () => {
                   schools={schools}
                   clubs={clubs}
                   recruiters={recruiters}
+                  onOpenHelp={() => openManual('list')}
                 />
                </div>
             </div>
@@ -389,6 +414,7 @@ const App: React.FC = () => {
               recruiters={recruiters}
               config={config}
               onUpdateAll={handleMasterDataUpdate}
+              onOpenHelp={() => openManual('master')}
             />
           )}
 
@@ -407,6 +433,7 @@ const App: React.FC = () => {
                 prospects={config.prospects}
                 results={config.results}
                 onAddSchool={handleDirectAddSchool}
+                onOpenHelp={() => openManual('form')}
               />
             </div>
           )}

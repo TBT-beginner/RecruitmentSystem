@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { StudentProfile, GenderValues, SchoolData } from '../types';
-import { Save, X, Plus, School, Trash2, XCircle, ChevronLeft } from 'lucide-react';
+import { Save, X, Plus, School, Trash2, XCircle, ChevronLeft, HelpCircle } from 'lucide-react';
 
 interface StudentFormProps {
   initialData?: StudentProfile | null;
@@ -15,12 +15,13 @@ interface StudentFormProps {
   prospects: string[];
   results: string[];
   onAddSchool: (school: SchoolData) => void;
+  onOpenHelp: () => void;
 }
 
 const StudentForm: React.FC<StudentFormProps> = ({ 
     initialData, onSubmit, onDelete, onCancel, nextId, 
     schools, clubs, recruiters, ranks, prospects, results,
-    onAddSchool 
+    onAddSchool, onOpenHelp
 }) => {
   // Extract unique municipalities from schools list
   const municipalities = useMemo(() => Array.from(new Set(schools.map(s => s.municipality))).sort(), [schools]);
@@ -163,9 +164,14 @@ const StudentForm: React.FC<StudentFormProps> = ({
   return (
     <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8 border border-slate-200 max-w-6xl mx-auto overflow-y-auto max-h-[calc(100vh-6rem)] md:max-h-[calc(100vh-8rem)] relative pb-24">
       <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
-        <h2 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-3">
-          {initialData ? '生徒情報編集' : '新規生徒登録'}
-        </h2>
+        <div className="flex items-center gap-3">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-3">
+            {initialData ? '生徒情報編集' : '新規生徒登録'}
+            </h2>
+             <button onClick={onOpenHelp} className="text-slate-400 hover:text-blue-600 transition-colors" title="この画面のヘルプを見る">
+                <HelpCircle size={24} />
+            </button>
+        </div>
         <button onClick={handleCancel} className="text-slate-400 hover:text-slate-600">
           <X size={32} />
         </button>

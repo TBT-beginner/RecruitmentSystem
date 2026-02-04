@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { StudentProfile, ConfigData, SchoolData } from '../types';
-import { Edit, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Filter, X, Save } from 'lucide-react';
+import { Edit, Eye, ArrowUpDown, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Filter, X, Save, HelpCircle } from 'lucide-react';
 import FilterModal, { FilterState } from './FilterModal';
 
 interface StudentListProps {
@@ -12,6 +12,7 @@ interface StudentListProps {
   schools: SchoolData[];
   clubs: string[];
   recruiters: string[];
+  onOpenHelp: () => void;
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -38,7 +39,7 @@ const ACTION_PRIORITIES: Record<string, number> = {
 
 const StudentList: React.FC<StudentListProps> = ({ 
     students, onEdit, onDelete, onUpdate, config,
-    schools, clubs, recruiters 
+    schools, clubs, recruiters, onOpenHelp
 }) => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
@@ -240,8 +241,13 @@ const StudentList: React.FC<StudentListProps> = ({
                 <Filter size={20} />
                 絞り込み:
              </div>
-             <div className="text-sm text-slate-400">
-                {processedStudents.length} / {students.length} 件表示
+             <div className="flex items-center gap-3">
+                 <div className="text-sm text-slate-400">
+                    {processedStudents.length} / {students.length} 件表示
+                 </div>
+                 <button onClick={onOpenHelp} className="text-slate-400 hover:text-blue-600 transition-colors" title="この画面のヘルプを見る">
+                    <HelpCircle size={20} />
+                 </button>
              </div>
          </div>
         

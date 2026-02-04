@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SchoolData, ConfigData } from '../types';
-import { Save, Trash2, Plus, MapPin, Search, ArrowUpDown, ArrowUp, ArrowDown, Dumbbell, Users, Sliders, X } from 'lucide-react';
+import { Save, Trash2, Plus, MapPin, Search, ArrowUpDown, ArrowUp, ArrowDown, Dumbbell, Users, Sliders, X, HelpCircle } from 'lucide-react';
 
 interface MasterDataProps {
   schools: SchoolData[];
@@ -8,6 +8,7 @@ interface MasterDataProps {
   recruiters: string[];
   config: ConfigData;
   onUpdateAll: (schools: SchoolData[], clubs: string[], recruiters: string[], config: ConfigData) => void;
+  onOpenHelp: () => void;
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -27,7 +28,7 @@ const getNextSchoolCode = (currentSchools: SchoolData[]): string => {
   return (maxId + 1).toString();
 };
 
-const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, config, onUpdateAll }) => {
+const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, config, onUpdateAll, onOpenHelp }) => {
   const [activeTab, setActiveTab] = useState<MasterTab>('school');
   const [searchQuery, setSearchQuery] = useState('');
   const [municipalityFilter, setMunicipalityFilter] = useState('');
@@ -315,7 +316,12 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
             <div className="flex flex-col">
                 {/* Header Actions */}
                 <div className="flex justify-between items-center p-4 md:p-8 pb-0 md:pb-6">
-                    <h2 className="text-xl md:text-2xl font-bold text-slate-800">学校情報管理</h2>
+                    <div className="flex items-center gap-3">
+                         <h2 className="text-xl md:text-2xl font-bold text-slate-800">学校情報管理</h2>
+                         <button onClick={onOpenHelp} className="text-slate-400 hover:text-blue-600 transition-colors" title="この画面のヘルプを見る">
+                            <HelpCircle size={24} />
+                        </button>
+                    </div>
                     <button 
                         onClick={() => setIsAddingSchool(true)}
                         className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm font-bold"
@@ -384,7 +390,12 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
         {activeTab === 'club' && (
             <div className="flex flex-col">
                  <div className="flex justify-between items-center p-4 md:p-8 pb-0 md:pb-6">
-                    <h2 className="text-xl md:text-2xl font-bold text-slate-800">部活動情報管理</h2>
+                    <div className="flex items-center gap-3">
+                         <h2 className="text-xl md:text-2xl font-bold text-slate-800">部活動情報管理</h2>
+                         <button onClick={onOpenHelp} className="text-slate-400 hover:text-blue-600 transition-colors" title="この画面のヘルプを見る">
+                            <HelpCircle size={24} />
+                        </button>
+                    </div>
                     <button 
                         onClick={() => setIsAddingClub(true)}
                         className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm font-bold"
@@ -430,7 +441,12 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
         {activeTab === 'recruiter' && (
              <div className="flex flex-col">
                 <div className="flex justify-between items-center p-4 md:p-8 pb-0 md:pb-6">
-                    <h2 className="text-xl md:text-2xl font-bold text-slate-800">担当者情報管理</h2>
+                    <div className="flex items-center gap-3">
+                         <h2 className="text-xl md:text-2xl font-bold text-slate-800">担当者情報管理</h2>
+                         <button onClick={onOpenHelp} className="text-slate-400 hover:text-blue-600 transition-colors" title="この画面のヘルプを見る">
+                            <HelpCircle size={24} />
+                        </button>
+                    </div>
                     <button 
                         onClick={() => setIsAddingRecruiter(true)}
                         className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm font-bold"
@@ -475,8 +491,13 @@ const MasterData: React.FC<MasterDataProps> = ({ schools, clubs, recruiters, con
       
         {activeTab === 'config' && (
              <div className="p-4 md:p-8 flex-1 overflow-visible">
-                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-6 text-sm">
-                    <strong>注意:</strong> ここでの設定はアプリケーション全体の自動判定ロジックに影響します。
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-6 text-sm flex justify-between items-center">
+                    <div>
+                        <strong>注意:</strong> ここでの設定はアプリケーション全体の自動判定ロジックに影響します。
+                    </div>
+                    <button onClick={onOpenHelp} className="text-yellow-600 hover:text-yellow-800 flex items-center gap-1" title="設定のヘルプ">
+                        <HelpCircle size={18} /> ヘルプ
+                    </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Ranks */}

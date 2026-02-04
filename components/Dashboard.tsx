@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { StudentProfile, SchoolData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Filter, X, Edit2, Check } from 'lucide-react';
+import { Filter, X, Edit2, Check, HelpCircle } from 'lucide-react';
 import FilterModal, { FilterState } from './FilterModal';
 
 interface DashboardProps {
@@ -14,6 +14,7 @@ interface DashboardProps {
   ranks: string[];
   prospects: string[];
   results: string[];
+  onOpenHelp: () => void;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
@@ -37,7 +38,7 @@ const CustomLegend = () => (
 );
 
 const Dashboard: React.FC<DashboardProps> = ({ 
-    students, recruitmentTarget, setRecruitmentTarget, schools, clubs, recruiters, ranks, prospects, results 
+    students, recruitmentTarget, setRecruitmentTarget, schools, clubs, recruiters, ranks, prospects, results, onOpenHelp
 }) => {
   // Target Editing State
   const [isEditingTarget, setIsEditingTarget] = useState(false);
@@ -142,7 +143,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       />
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
-        <h2 className="text-2xl md:text-3xl font-bold text-slate-800">勧誘状況ダッシュボード</h2>
+        <div className="flex items-center gap-3">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800">勧誘状況ダッシュボード</h2>
+            <button onClick={onOpenHelp} className="text-slate-400 hover:text-blue-600 transition-colors" title="この画面のヘルプを見る">
+                <HelpCircle size={24} />
+            </button>
+        </div>
       </div>
 
       {/* Filters Section */}
