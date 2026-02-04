@@ -257,7 +257,7 @@ const App: React.FC = () => {
             <GraduationCap size={32} className="text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-xl leading-tight">2026年度入試</h1>
+            <h1 className="font-bold text-xl leading-tight">2027年度入試</h1>
             <p className="text-sm text-slate-400">特技推薦勧誘管理</p>
           </div>
         </div>

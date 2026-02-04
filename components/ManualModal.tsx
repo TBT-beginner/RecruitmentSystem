@@ -75,7 +75,7 @@ const ManualModal: React.FC<ManualModalProps> = ({ isOpen, onClose, initialSecti
               <div className="space-y-6">
                 <h3 className="text-2xl font-bold text-slate-800 border-b pb-2">このシステムについて</h3>
                 <p>
-                  2026年度入試に向けた、特技推薦勧誘活動を効率化するための管理システムです。<br/>
+                  2027年度入試に向けた、特技推薦勧誘活動を効率化するための管理システムです。<br/>
                   Googleスプレッドシートと連携し、生徒情報の蓄積、進捗管理、分析を一元的に行うことができます。
                 </p>
                 <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">

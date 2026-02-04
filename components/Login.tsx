@@ -14,7 +14,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, error }) => {
           <div className="inline-flex p-3 bg-white/20 rounded-xl mb-4 backdrop-blur-sm">
             <GraduationCap size={48} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">2026年度入試<br/>特技推薦勧誘管理</h1>
+          <h1 className="text-2xl font-bold text-white">2027年度入試<br/>特技推薦勧誘管理</h1>
           <p className="text-blue-100 mt-2 text-sm">kiryo.ac.jp 専用</p>
         </div>
 
