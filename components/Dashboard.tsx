@@ -102,7 +102,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // 4. Funnel Data (Simple approximation)
   const total = filteredStudents.length;
-  const contacted = filteredStudents.filter(s => s.callDatePrincipal || s.callDateAdvisor).length;
+  const calledPrincipal = filteredStudents.filter(s => !!s.callDatePrincipal).length;
+  const calledAdvisor = filteredStudents.filter(s => !!s.callDateAdvisor).length;
   const visited = filteredStudents.filter(s => s.visitDate && s.visitDate !== '×').length;
   
   // 合格定義
@@ -111,8 +112,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const funnelData = [
     { name: 'リスト登録', value: total },
-    { name: '電話接触', value: contacted },
-    { name: '学校訪問', value: visited },
+    { name: '管理職TEL済', value: calledPrincipal },
+    { name: '顧問TEL済', value: calledAdvisor },
+    { name: '学校訪問済', value: visited },
     { name: '確約/合格', value: accepted },
   ];
 

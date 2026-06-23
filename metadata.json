@@ -1,5 +1,6 @@
 {
   "name": "Student Recruitment Tracker 2027",
   "description": "A comprehensive CRM for managing 2027 entrance exam special skills recruitment, featuring data entry, list management, visualization, and AI-powered analysis.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }

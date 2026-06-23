@@ -302,6 +302,9 @@ const StudentList: React.FC<StudentListProps> = ({
               <th className="hidden md:table-cell px-3 py-3 cursor-pointer hover:bg-slate-200 bg-slate-100 z-20 border-b border-slate-200" onClick={() => handleSort('scholarshipRank')}>
                   <div className="flex items-center gap-1">成績 {getSortIcon('scholarshipRank')}</div>
               </th>
+              <th className="hidden md:table-cell px-3 py-3 cursor-pointer hover:bg-slate-200 bg-slate-100 z-20 border-b border-slate-200" onClick={() => handleSort('recruiterType')}>
+                  <div className="flex items-center gap-1">担当管理職 {getSortIcon('recruiterType')}</div>
+              </th>
               <th className="hidden md:table-cell px-3 py-3 cursor-pointer hover:bg-slate-200 bg-slate-100 z-20 border-b border-slate-200" onClick={() => handleSort('callDatePrincipal')}>
                   <div className="flex items-center gap-1">管理職TEL {getSortIcon('callDatePrincipal')}</div>
               </th>
@@ -368,6 +371,11 @@ const StudentList: React.FC<StudentListProps> = ({
                     </span>
                   </div>
                   <div className="text-xs text-slate-600">{student.scoreInfo || '-'}</div>
+                </td>
+                
+                {/* 担当管理職 */}
+                <td className="hidden md:table-cell px-3 py-3 border-b border-slate-100 text-slate-700 font-medium text-base">
+                  {student.recruiterType}
                 </td>
                 
                 {/* Inline Editable: Principal Call Date */}
@@ -509,7 +517,7 @@ const StudentList: React.FC<StudentListProps> = ({
             )})}
             {processedStudents.length === 0 && (
               <tr>
-                <td colSpan={12} className="px-6 py-12 text-center text-slate-400 text-lg">
+                <td colSpan={13} className="px-6 py-12 text-center text-slate-400 text-lg">
                     {students.length === 0 
                         ? "登録された生徒がいません。右上のボタンから追加してください。" 
                         : "条件に一致する生徒が見つかりません。"}
