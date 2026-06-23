@@ -374,8 +374,25 @@ const StudentList: React.FC<StudentListProps> = ({
                 </td>
                 
                 {/* 担当管理職 */}
-                <td className="hidden md:table-cell px-3 py-3 border-b border-slate-100 text-slate-700 font-medium text-base">
-                  {student.recruiterType}
+                <td 
+                  className="hidden md:table-cell px-3 py-3 border-b border-slate-100 text-slate-700 font-medium text-base relative cursor-pointer hover:bg-blue-50"
+                  onDoubleClick={() => handleCellDoubleClick(student.id, 'recruiterType')}
+                  title="ダブルクリックで編集"
+                >
+                  {editingCell?.studentId === student.id && editingCell?.field === 'recruiterType' ? (
+                    <select
+                      autoFocus
+                      value={student.recruiterType || ''}
+                      onChange={(e) => handleCellUpdate(e.target.value, student, 'recruiterType')}
+                      onBlur={() => setEditingCell(null)}
+                      className="absolute inset-0 w-full h-full border-2 border-blue-500 rounded px-1 text-sm bg-white"
+                    >
+                      <option value="">未設定</option>
+                      {recruiters.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  ) : (
+                    student.recruiterType || <span className="text-slate-300 text-xs">-</span>
+                  )}
                 </td>
                 
                 {/* Inline Editable: Principal Call Date */}
