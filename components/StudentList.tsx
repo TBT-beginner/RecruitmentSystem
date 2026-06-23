@@ -28,8 +28,8 @@ interface EditingCell {
 
 // Define priority for next actions (Lower number = Higher priority)
 const ACTION_PRIORITIES: Record<string, number> = {
-  "管理職TEL": 1,
-  "顧問TEL": 2,
+  "管理職TEL待": 1,
+  "顧問TEL待": 2,
   "訪問日設定": 3,
   "結果記入": 4,
   "結果待": 5,
@@ -93,10 +93,10 @@ const StudentList: React.FC<StudentListProps> = ({
     }
 
     if (student.callDatePrincipal) {
-       return { text: "顧問TEL", color: "text-indigo-600 bg-indigo-50 border-indigo-200" };
+       return { text: "顧問TEL待", color: "text-indigo-600 bg-indigo-50 border-indigo-200" };
     }
 
-    return { text: "管理職TEL", color: "text-red-600 bg-red-50 border-red-200 font-bold" };
+    return { text: "管理職TEL待", color: "text-red-600 bg-red-50 border-red-200 font-bold" };
   };
 
   // Filter and Sort Logic
